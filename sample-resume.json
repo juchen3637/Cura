@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "basics": {
+    "name": "Jane Smith",
+    "title": "Senior Software Engineer",
+    "location": "San Francisco, CA",
+    "contact": {
+      "email": "jane.smith@example.com",
+      "phone": "(555) 123-4567",
+      "links": [
+        "linkedin.com/in/janesmith",
+        "github.com/janesmith",
+        "janesmith.dev"
+      ]
+    },
+    "summary": "Results-driven software engineer with 5+ years building scalable web applications. Expertise in React, TypeScript, and cloud infrastructure."
+  },
+  "experience": [
+    {
+      "company": "Tech Solutions Inc",
+      "role": "Senior Software Engineer",
+      "location": "San Francisco, CA",
+      "start": "2021-03",
+      "end": "present",
+      "bullets": [
+        "Led development of customer dashboard reducing load time by 60% serving 100K+ daily users",
+        "Architected microservices infrastructure using Node.js and AWS, improving reliability to 99.9%"
+      ]
+    },
+    {
+      "company": "StartupXYZ",
+      "role": "Software Engineer",
+      "location": "Remote",
+      "start": "2019-06",
+      "end": "2021-02",
+      "bullets": [
+        "Built real-time collaboration features using WebSockets, supporting 10K concurrent users",
+        "Implemented CI/CD pipeline reducing deployment time from 2 hours to 15 minutes"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "University of California, Berkeley",
+      "degree": "B.S. Computer Science",
+      "location": "Berkeley, CA",
+      "start": "2015-09",
+      "end": "2019-05"
+    }
+  ],
+  "skills": [
+    {
+      "name": "Languages",
+      "skills": ["Python", "JavaScript", "TypeScript", "C++", "Java"]
+    },
+    {
+      "name": "Frameworks and Libraries",
+      "skills": ["React.js", "Node.js", "Express.js", "Angular", "Next.js"]
+    },
+    {
+      "name": "Developer Tools",
+      "skills": ["PostgreSQL", "Git", "AWS", "Docker", "SAP Spartacus", "CI/CD"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "DevTools Extension",
+      "link": "chrome.google.com/webstore/devtools",
+      "bullets": [
+        "Chrome extension for developers with 10K+ users, featured in Chrome Web Store"
+      ]
+    }
+  ]
+}
+
