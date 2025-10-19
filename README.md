@@ -1,6 +1,6 @@
 # Resume Editor
 
-A modern, AI-powered resume builder built with Next.js 14, TypeScript, and Anthropic Claude. Create, edit, and export professional ATS-optimized resumes with optional AI-powered bullet point improvements.
+A modern, AI-powered resume builder built with Next.js 14, TypeScript, and Anthropic Claude. Create, edit, and export professional ATS-optimized resumes without storing your data with optional AI-powered bullet point improvements.
 
 ## Features
 
