@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface RewriteModalProps {
@@ -21,13 +21,7 @@ export default function RewriteModal({
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && originalText) {
-      fetchSuggestions();
-    }
-  }, [isOpen, originalText]);
-
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     if (cooldown) return;
 
     setLoading(true);
@@ -58,7 +52,13 @@ export default function RewriteModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [cooldown, originalText]);
+
+  useEffect(() => {
+    if (isOpen && originalText) {
+      fetchSuggestions();
+    }
+  }, [isOpen, originalText, fetchSuggestions]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);

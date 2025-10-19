@@ -472,7 +472,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
         <section>
           <h2 className="text-xl font-bold mb-4">Skills</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Organize your skills into custom categories (e.g., "Languages", "Tools", "Certifications", etc.)
+            Organize your skills into custom categories (e.g., &quot;Languages&quot;, &quot;Tools&quot;, &quot;Certifications&quot;, etc.)
           </p>
           {resume.skills.map((category, catIdx) => (
             <div key={catIdx} className="mb-4 p-4 border rounded bg-gray-50">
