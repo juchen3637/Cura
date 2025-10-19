@@ -145,10 +145,10 @@ export function lintResume(resume: Resume): LintIssue[] {
       });
     }
 
-    if (!edu.graduation.trim()) {
+    if (!edu.end.trim()) {
       issues.push({
         section: `Education #${idx + 1}`,
-        message: "Graduation year is required",
+        message: "End date is required",
         severity: "error",
       });
     }
