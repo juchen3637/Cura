@@ -71,15 +71,19 @@ export default function ResumePreview() {
                     {edu.institution || "University Name"}
                   </h3>
                 </div>
-                <div className={styles.dates}>
-                  {formatDateRange(edu.start, edu.end) || "Start - End"}
-                </div>
+                {edu.location && (
+                  <div className={styles.location}>{edu.location}</div>
+                )}
               </div>
-              {edu.location && (
-                <div className={styles.location}>{edu.location}</div>
-              )}
-              <div className={styles.role}>
-                {edu.degree || "Degree"}
+              <div className={styles.companyLine}>
+                <div className={styles.role}>
+                  {edu.degree || "Degree"}
+                </div>
+                <div className="text-right">
+                  <div className={styles.dates}>
+                    {formatDateRange(edu.start, edu.end) || "Start - End"}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -97,17 +101,19 @@ export default function ResumePreview() {
                   <span className={styles.company}>
                     {exp.company || "Company Name"}
                   </span>
-                  {exp.role && (
-                    <span className="text-gray-600 italic text-base print:text-[9pt] ml-2">
-                      | {exp.role}
-                    </span>
-                  )}
                 </div>
-                <div className={styles.dates}>
-                  {formatDateRange(exp.start, exp.end) || "Start - End"}
+                <div className={styles.location}>{exp.location || "Location"}</div>
+              </div>
+              <div className={styles.companyLine}>
+                {exp.role && (
+                  <div className={styles.role}>{exp.role}</div>
+                )}
+                <div className="text-right">
+                  <div className={styles.dates}>
+                    {formatDateRange(exp.start, exp.end) || "Start - End"}
+                  </div>
                 </div>
               </div>
-              <div className={styles.location}>{exp.location || "Location"}</div>
               {exp.bullets.length > 0 && (
                 <ul className={styles.bullets}>
                   {exp.bullets.map((bullet, bulletIdx) => (
