@@ -52,25 +52,25 @@ export default function Home() {
     <div className="min-h-screen bg-gray-100 print:bg-white print:min-h-0">
       {/* Toolbar */}
       <header className="bg-white shadow-sm sticky top-0 z-40 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">Resume Editor</h1>
-            <div className="flex items-center gap-3 flex-wrap">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Resume Editor</h1>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button
                 onClick={handleImportJson}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm"
+                className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-xs sm:text-sm"
               >
                 Import JSON
               </button>
               <button
                 onClick={handleDownloadJson}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs sm:text-sm"
               >
                 Download JSON
               </button>
               <button
                 onClick={handleExportPdf}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
+                className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-xs sm:text-sm"
               >
                 Export PDF
               </button>
@@ -100,18 +100,18 @@ export default function Home() {
       />
 
       {/* Main Content */}
-      <div className="max-w-[1800px] mx-auto px-4 py-6 print:p-0 print:max-w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:block print:gap-0">
+      <div className="max-w-[1800px] mx-auto px-3 sm:px-4 py-4 sm:py-6 print:p-0 print:max-w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 print:block print:gap-0">
           {/* Left - Editor with Tabs */}
           <div className="bg-white rounded-lg shadow print:hidden">
             {/* Horizontal Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-1 p-2">
+            <div className="border-b border-gray-200 overflow-x-auto">
+              <nav className="flex space-x-1 p-2 min-w-max sm:min-w-0">
                 {sections.map((section) => (
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={`px-4 py-2 text-sm font-medium rounded-t transition-colors ${
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-t transition-colors whitespace-nowrap ${
                       activeSection === section.id
                         ? "bg-gray-900 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -124,14 +124,14 @@ export default function Home() {
             </div>
             
             {/* Form Content */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <ResumeForm activeSection={activeSection} />
             </div>
           </div>
 
           {/* Right - Preview */}
-          <div className="bg-gray-50 rounded-lg shadow p-6 overflow-auto sticky top-24 h-[calc(100vh-7rem)] print:p-0 print:bg-white print:shadow-none print:static print:h-auto print:overflow-visible">
-            <h2 className="text-lg font-bold mb-4 text-gray-700 print:hidden">
+          <div className="bg-gray-50 rounded-lg shadow p-3 sm:p-6 overflow-auto lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] print:p-0 print:bg-white print:shadow-none print:static print:h-auto print:overflow-visible">
+            <h2 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-gray-700 print:hidden">
               Live Preview
             </h2>
             <div className="bg-white shadow-lg print:shadow-none print:bg-white">

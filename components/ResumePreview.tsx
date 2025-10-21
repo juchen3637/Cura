@@ -8,18 +8,18 @@ export default function ResumePreview() {
 
   const getTemplateStyles = () => {
     return {
-      container: "w-full max-w-4xl mx-auto bg-white p-8 font-serif leading-normal print:max-w-full print:p-0 print:text-[9pt] print:leading-tight print:bg-white",
-      name: "text-2xl font-bold text-center mb-2 tracking-tight print:text-[16pt] print:mb-1",
-      contactLine: "text-xs text-center mb-1 text-gray-700 print:text-[9pt] print:mb-0",
-      section: "mb-4 print:mb-2",
-      sectionTitle: "text-xs font-bold uppercase tracking-widest border-b border-black pb-1 mb-2 print:text-[9pt] print:mb-1 print:pb-0.5",
-      companyLine: "flex justify-between items-baseline mb-0.5 print:mb-0",
-      company: "font-bold text-sm print:text-[9pt]",
-      role: "italic text-sm print:text-[9pt]",
-      location: "text-xs text-gray-700 print:text-[8pt]",
-      dates: "text-xs text-gray-700 text-right whitespace-nowrap print:text-[8pt]",
-      bullets: "ml-4 mt-1 space-y-0.5 print:ml-4 print:mt-0.5 print:space-y-0",
-      spacing: "mb-3 print:mb-1.5",
+      container: "w-full max-w-4xl mx-auto bg-white p-4 sm:p-6 md:p-8 font-serif leading-normal print:max-w-full print:p-0 print:text-[9pt] print:leading-tight print:bg-white",
+      name: "text-xl sm:text-2xl font-bold text-center mb-2 tracking-tight print:text-[16pt] print:mb-1",
+      contactLine: "text-[10px] sm:text-xs text-center mb-1 text-gray-700 print:text-[9pt] print:mb-0 break-words",
+      section: "mb-3 sm:mb-4 print:mb-2",
+      sectionTitle: "text-[10px] sm:text-xs font-bold uppercase tracking-widest border-b border-black pb-1 mb-2 print:text-[9pt] print:mb-1 print:pb-0.5",
+      companyLine: "flex justify-between items-baseline mb-0.5 print:mb-0 gap-2",
+      company: "font-bold text-xs sm:text-sm print:text-[9pt]",
+      role: "italic text-xs sm:text-sm print:text-[9pt]",
+      location: "text-[10px] sm:text-xs text-gray-700 print:text-[8pt] text-right",
+      dates: "text-[10px] sm:text-xs text-gray-700 text-right whitespace-nowrap print:text-[8pt]",
+      bullets: "ml-3 sm:ml-4 mt-1 space-y-0.5 print:ml-4 print:mt-0.5 print:space-y-0",
+      spacing: "mb-2 sm:mb-3 print:mb-1.5",
     };
   };
 
@@ -117,7 +117,7 @@ export default function ResumePreview() {
               {exp.bullets.length > 0 && (
                 <ul className={styles.bullets}>
                   {exp.bullets.map((bullet, bulletIdx) => (
-                    <li key={bulletIdx} className="text-gray-800 leading-normal text-sm print:text-[9pt] print:leading-tight">
+                    <li key={bulletIdx} className="text-gray-800 leading-normal text-xs sm:text-sm print:text-[9pt] print:leading-tight">
                       • {bullet}
                     </li>
                   ))}
@@ -150,7 +150,7 @@ export default function ResumePreview() {
               {proj.bullets.length > 0 && (
                 <ul className={styles.bullets}>
                   {proj.bullets.map((bullet, bulletIdx) => (
-                    <li key={bulletIdx} className="text-gray-800 leading-normal text-sm print:text-[9pt] print:leading-tight">
+                    <li key={bulletIdx} className="text-gray-800 leading-normal text-xs sm:text-sm print:text-[9pt] print:leading-tight">
                       • {bullet}
                     </li>
                   ))}
@@ -165,7 +165,7 @@ export default function ResumePreview() {
       {resume.skills.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Skills</h2>
-          <div className="text-gray-800 leading-normal text-sm print:text-[9pt] print:leading-tight">
+          <div className="text-gray-800 leading-normal text-xs sm:text-sm print:text-[9pt] print:leading-tight">
             {resume.skills.map((category, idx) => (
               <div key={idx} className="mb-0.5 print:mb-0">
                 {category.name && category.skills.length > 0 && (

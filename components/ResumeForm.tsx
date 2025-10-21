@@ -228,7 +228,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
     <div className="space-y-6">
       {activeSection === "basics" && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Basic Information</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Basic Information</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Name</label>
@@ -301,7 +301,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
 
       {activeSection === "experience" && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Experience</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Experience</h2>
           {resume.experience.map((exp, expIdx) => (
             <div key={expIdx} className="mb-6 p-4 border rounded bg-gray-50">
               <div className="flex justify-between items-start mb-4">
@@ -409,7 +409,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
 
       {activeSection === "education" && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Education</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Education</h2>
           {resume.education.map((edu, idx) => (
             <div key={idx} className="mb-4 p-4 border rounded bg-gray-50">
               <div className="flex justify-between items-start mb-3">
@@ -470,7 +470,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
 
       {activeSection === "skills" && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Skills</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Skills</h2>
           <p className="text-sm text-gray-600 mb-4">
             Organize your skills into custom categories (e.g., &quot;Languages&quot;, &quot;Tools&quot;, &quot;Certifications&quot;, etc.)
           </p>
@@ -531,7 +531,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
 
       {activeSection === "projects" && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Projects</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Projects</h2>
           {resume.projects.map((proj, projIdx) => (
             <div key={projIdx} className="mb-4 p-4 border rounded bg-gray-50">
               <div className="flex justify-between items-start mb-3">
