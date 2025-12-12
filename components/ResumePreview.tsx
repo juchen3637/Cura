@@ -1,10 +1,42 @@
 "use client";
 
+import { useRef, useEffect, useState } from "react";
 import { useResumeStore } from "@/store/resumeStore";
 import { formatDateRange } from "@/lib/dateFormatter";
 
 export default function ResumePreview() {
   const { resume } = useResumeStore();
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [pageCount, setPageCount] = useState(1);
+
+  // Calculate page count based on print dimensions
+  useEffect(() => {
+    if (previewRef.current) {
+      // Use a more accurate calculation based on standard resume dimensions
+      // Standard US Letter: 8.5" x 11"
+      // With typical 0.5" margins on all sides = 7.5" x 10" usable space
+      // At 96 DPI (standard web): 10 inches = 960px height
+
+      // Get computed font size to estimate better
+      const computedStyle = window.getComputedStyle(previewRef.current);
+      const fontSize = parseFloat(computedStyle.fontSize);
+      const lineHeight = parseFloat(computedStyle.lineHeight) || fontSize * 1.5;
+
+      // Count approximate lines of content
+      const contentHeight = previewRef.current.scrollHeight;
+
+      // Estimate print height: letter size (11") - margins (1" top + 1" bottom) = 9"
+      // Convert to pixels: 9 inches * 96 DPI = 864px
+      // But account for tighter print spacing (9pt font vs screen font)
+      const screenToPrintRatio = 0.75; // Print is typically 75% of screen height
+      const adjustedHeight = contentHeight * screenToPrintRatio;
+
+      const pageHeight = 864; // 9 inches at 96 DPI
+      const calculatedPages = Math.max(1, Math.ceil(adjustedHeight / pageHeight));
+
+      setPageCount(calculatedPages);
+    }
+  }, [resume]);
 
   const getTemplateStyles = () => {
     return {
@@ -26,10 +58,41 @@ export default function ResumePreview() {
   const styles = getTemplateStyles();
 
   return (
-    <div
-      id="resume-preview"
-      className={styles.container}
-    >
+    <div>
+      {/* Page count warning */}
+      {pageCount > 1 && (
+        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 print:hidden">
+          <div className="flex items-start">
+            <svg
+              className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 mr-3"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div>
+              <h3 className="text-sm font-semibold text-yellow-900 mb-1">
+                Resume Length Warning
+              </h3>
+              <p className="text-sm text-yellow-800">
+                Your resume is approximately <strong>{pageCount} pages</strong>. Most recruiters
+                prefer resumes to be 1 page. Consider removing less relevant experiences or
+                condensing bullet points.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        ref={previewRef}
+        id="resume-preview"
+        className={styles.container}
+      >
       {/* Header */}
       <header className="mb-3">
         <h1 className={styles.name}>{resume.basics.name || "Your Name"}</h1>
@@ -179,6 +242,7 @@ export default function ResumePreview() {
           </div>
         </section>
       )}
+      </div>
     </div>
   );
 }
