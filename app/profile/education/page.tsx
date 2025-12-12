@@ -244,7 +244,7 @@ export default function EducationPage() {
         {/* Education List */}
         {education && education.length > 0 ? (
           <div className="space-y-4">
-            {education.map((edu) => (
+            {education.map((edu: any) => (
               <div
                 key={edu.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"

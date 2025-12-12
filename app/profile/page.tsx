@@ -504,7 +504,7 @@ export default function ProfilePage() {
                 <div className="md:col-span-2">
                   <p className="text-sm text-gray-500 mb-2">Links</p>
                   <div className="space-y-1">
-                    {profile.links.map((link, index) => (
+                    {profile.links.map((link: string, index: number) => (
                       <a
                         key={index}
                         href={link}

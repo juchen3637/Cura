@@ -81,7 +81,9 @@ export const useResumeStore = create<ResumeState>()(
                   newBullets[suggestion.bulletIndex] = suggestion.suggestedText!;
                   return { ...exp, bullets: newBullets };
                 }
-                return { ...exp, [suggestion.field]: suggestion.suggestedText };
+                if (suggestion.field) {
+                  return { ...exp, [suggestion.field]: suggestion.suggestedText };
+                }
               }
               return exp;
             }),
@@ -96,7 +98,9 @@ export const useResumeStore = create<ResumeState>()(
                   newBullets[suggestion.bulletIndex] = suggestion.suggestedText!;
                   return { ...proj, bullets: newBullets };
                 }
-                return { ...proj, [suggestion.field]: suggestion.suggestedText };
+                if (suggestion.field) {
+                  return { ...proj, [suggestion.field]: suggestion.suggestedText };
+                }
               }
               return proj;
             }),

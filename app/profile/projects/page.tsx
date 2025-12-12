@@ -248,7 +248,7 @@ export default function ProjectsPage() {
         {/* Projects List */}
         {projects && projects.length > 0 ? (
           <div className="space-y-4">
-            {projects.map((proj) => (
+            {projects.map((proj: any) => (
               <div
                 key={proj.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
@@ -286,7 +286,7 @@ export default function ProjectsPage() {
                 </div>
                 {proj.bullets && proj.bullets.length > 0 && (
                   <ul className="space-y-1">
-                    {proj.bullets.map((bullet, idx) => (
+                    {proj.bullets.map((bullet: string, idx: number) => (
                       <li key={idx} className="text-sm text-gray-700">
                         • {bullet}
                       </li>

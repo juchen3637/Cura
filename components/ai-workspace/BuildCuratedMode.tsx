@@ -18,7 +18,7 @@ interface CuratedResult {
 }
 
 interface BuildCuratedModeProps {
-  addTask: (mode: "analyze" | "build", jobDescription: string, jobTitle?: string, company?: string, resumeData?: string, onComplete?: (result: any) => void) => string;
+  addTask: (mode: "analyze" | "build", jobDescription: string, jobTitle?: string, company?: string, resumeData?: string, onComplete?: (result: any) => void) => Promise<string>;
 }
 
 export default function BuildCuratedMode({ addTask }: BuildCuratedModeProps) {

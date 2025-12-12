@@ -308,7 +308,7 @@ export default function ExperiencesPage() {
         {/* Experiences List */}
         {experiences && experiences.length > 0 ? (
           <div className="space-y-4">
-            {experiences.map((exp) => (
+            {experiences.map((exp: any) => (
               <div
                 key={exp.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
@@ -340,7 +340,7 @@ export default function ExperiencesPage() {
                 </div>
                 {exp.bullets && exp.bullets.length > 0 && (
                   <ul className="space-y-1 mt-3">
-                    {exp.bullets.map((bullet, idx) => (
+                    {exp.bullets.map((bullet: string, idx: number) => (
                       <li key={idx} className="text-sm text-gray-700">
                         • {bullet}
                       </li>

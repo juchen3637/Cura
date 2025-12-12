@@ -241,7 +241,7 @@ export default function SkillsPage() {
         {/* Skill Categories List */}
         {skillCategories && skillCategories.length > 0 ? (
           <div className="space-y-4">
-            {skillCategories.map((category) => (
+            {skillCategories.map((category: any) => (
               <div
                 key={category.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
@@ -252,7 +252,7 @@ export default function SkillsPage() {
                       {category.name}
                     </h3>
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {category.skills.map((skill, idx) => (
+                      {category.skills.map((skill: string, idx: number) => (
                         <span
                           key={idx}
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800"

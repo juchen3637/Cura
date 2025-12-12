@@ -10,6 +10,7 @@ export interface InlineSuggestion {
   // For targeting specific items
   sectionIndex?: number; // Index in array (e.g., which experience)
   field?: string; // Specific field (e.g., "role", "bullets[0]")
+  bulletIndex?: number; // Index in bullets array
 
   // For modify suggestions
   originalText?: string;

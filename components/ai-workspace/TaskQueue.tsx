@@ -49,7 +49,7 @@ export default function TaskQueue({ tasks, onClearCompleted }: TaskQueueProps) {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {task.jobTitle}
+                    {task.job_title}
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     at {task.company}

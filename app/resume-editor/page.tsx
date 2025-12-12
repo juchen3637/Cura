@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useResumes } from "@/lib/hooks/useResumes";
@@ -10,7 +10,7 @@ import ResumePreview from "@/components/ResumePreview";
 import ResumeDiffPreview from "@/components/editor/ResumeDiffPreview";
 import { exportToPdf } from "@/lib/exporters/pdfExporter";
 
-export default function ResumeEditor() {
+function ResumeEditorContent() {
   const searchParams = useSearchParams();
   const resumeIdFromUrl = searchParams.get("resumeId");
 
@@ -539,5 +539,17 @@ export default function ResumeEditor() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ResumeEditor() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading editor...</div>
+      </div>
+    }>
+      <ResumeEditorContent />
+    </Suspense>
   );
 }

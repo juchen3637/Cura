@@ -64,17 +64,18 @@ export default function AIWorkspace() {
   };
 
   // Add onComplete handlers to tasks
-  const enhancedAddTask = (
+  const enhancedAddTask = async (
     mode: "analyze" | "build",
     jobDescription: string,
     jobTitle?: string,
     company?: string,
     resumeData?: string
   ) => {
-    return addTask(mode, jobDescription, jobTitle, company, resumeData, (result) => {
+    const taskId = await addTask(mode, jobDescription, jobTitle, company, resumeData, (result) => {
       // Task completed - result is available in the queue for user to view
       console.log(`Task completed: ${mode}`, result);
     });
+    return taskId;
   };
 
   return (

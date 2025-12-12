@@ -21,15 +21,15 @@ export async function POST(req: Request) {
     // Build the message content with PDF document
     const messageContent = [
       {
-        type: "document",
+        type: "document" as const,
         source: {
-          type: "base64",
-          media_type: mediaType || "application/pdf",
+          type: "base64" as const,
+          media_type: (mediaType || "application/pdf") as "application/pdf",
           data: pdfData,
         },
       },
       {
-        type: "text",
+        type: "text" as const,
         text: `You are a resume parsing expert. Please analyze the uploaded resume PDF and extract all information into a structured JSON format.
 
 Extract the following information:
@@ -104,7 +104,7 @@ Important guidelines:
       messages: [
         {
           role: "user",
-          content: messageContent,
+          content: messageContent as any, // Document type not in SDK types yet
         },
       ],
     });

@@ -323,7 +323,7 @@ export default function DashboardPage() {
           </div>
             ) : (
               <div className="grid md:grid-cols-1 lg:grid-cols-1 gap-4">
-                {resumes.map((resume) => (
+                {resumes.map((resume: any) => (
                   <div
                     key={resume.id}
                     className={`bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-all cursor-pointer ${

@@ -31,7 +31,7 @@ interface AnalysisResult {
 }
 
 interface AnalyzeModeProps {
-  addTask: (mode: "analyze" | "build", jobDescription: string, jobTitle?: string, company?: string, resumeData?: string, onComplete?: (result: any) => void) => string;
+  addTask: (mode: "analyze" | "build", jobDescription: string, jobTitle?: string, company?: string, resumeData?: string, onComplete?: (result: any) => void) => Promise<string>;
 }
 
 export default function AnalyzeMode({ addTask }: AnalyzeModeProps) {
@@ -180,7 +180,6 @@ export default function AnalyzeMode({ addTask }: AnalyzeModeProps) {
   const handleRemoveFile = () => {
     setResume(null);
     setSelectedResumeId("");
-    setAnalysis(null);
   };
 
   return (
