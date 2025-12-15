@@ -80,7 +80,7 @@ export default function UsageDisplay() {
         {isAdmin && (
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2 mt-2">
             <p className="text-xs text-blue-800 dark:text-blue-300">
-              ⚡ Admin account - Safety limits prevent infinite loops
+              Admin account - Safety limits prevent infinite loops
             </p>
           </div>
         )}

@@ -14,6 +14,8 @@ import {
   useCreateProject,
   useCreateSkillCategory,
 } from "@/lib/hooks/useProfile";
+import { useToast } from "@/lib/hooks/useToast";
+import Toast from "@/components/Toast";
 
 export default function ProfilePage() {
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -27,6 +29,8 @@ export default function ProfilePage() {
   const createEducation = useCreateEducation();
   const createProject = useCreateProject();
   const createSkillCategory = useCreateSkillCategory();
+
+  const { toast, hideToast, success, error: showError, warning } = useToast();
 
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -48,7 +52,7 @@ export default function ProfilePage() {
     if (!file) return;
 
     if (file.type !== "application/pdf") {
-      alert("Please upload a PDF file.");
+      showError("Please upload a PDF file.");
       return;
     }
 
@@ -64,10 +68,7 @@ export default function ProfilePage() {
 
       if (!rateLimitResponse.ok) {
         if (rateLimitResponse.status === 429) {
-          const limitData = await rateLimitResponse.json();
-          alert(
-            `PDF import limit exceeded. You have ${limitData.remaining || 0} imports remaining this month. Limit resets on ${new Date(limitData.reset_date).toLocaleDateString()}.`
-          );
+          warning("You've reached your PDF import limit for this month. Please try again next month.");
           setUploadingPdf(false);
           if (fileInputRef.current) {
             fileInputRef.current.value = "";
@@ -196,11 +197,11 @@ export default function ProfilePage() {
         if (!skillResponse.ok) throw new Error("Failed to add skill category");
       }
 
-      alert("Resume imported successfully! All data has been added to your profile.");
+      success("Resume imported successfully! All data has been added to your profile.");
       window.location.reload();
     } catch (error) {
       console.error("Import error:", error);
-      alert("Failed to import resume from PDF. Please try again.");
+      showError("Failed to import resume from PDF. Please try again.");
     } finally {
       setUploadingPdf(false);
       if (fileInputRef.current) {
@@ -240,9 +241,9 @@ export default function ProfilePage() {
     try {
       await updateProfile.mutateAsync(profileForm);
       setEditingProfile(false);
-      alert("Profile updated successfully!");
+      success("Profile updated successfully!");
     } catch (error) {
-      alert("Failed to update profile");
+      showError("Failed to update profile");
     }
   };
 
@@ -307,7 +308,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -320,16 +321,16 @@ export default function ProfilePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 Manage your professional profile - add unlimited experiences, projects, and skills
               </p>
             </div>
             <button
               onClick={handleUploadPdf}
               disabled={uploadingPdf}
-              className="inline-flex items-center px-4 py-2 border border-purple-600 rounded-lg text-sm font-medium text-purple-600 bg-white hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-4 py-2 border border-purple-600 rounded-lg text-sm font-medium text-purple-600 bg-white hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {uploadingPdf ? (
                 <>
@@ -352,9 +353,9 @@ export default function ProfilePage() {
         </div>
 
         {/* Basic Info Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Basic Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h2>
             {!editingProfile ? (
               <button
                 onClick={handleEditProfile}
@@ -383,7 +384,7 @@ export default function ProfilePage() {
           {editingProfile ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Full Name
                 </label>
                 <input
@@ -392,23 +393,23 @@ export default function ProfilePage() {
                   onChange={(e) =>
                     setProfileForm({ ...profileForm, full_name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email
                 </label>
                 <input
                   type="email"
                   value={profile?.email || ""}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600"
                 />
                 <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Location
                 </label>
                 <input
@@ -418,11 +419,11 @@ export default function ProfilePage() {
                     setProfileForm({ ...profileForm, location: e.target.value })
                   }
                   placeholder="e.g., San Francisco, CA"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Phone
                 </label>
                 <input
@@ -432,11 +433,11 @@ export default function ProfilePage() {
                     setProfileForm({ ...profileForm, phone: e.target.value })
                   }
                   placeholder="e.g., (555) 123-4567"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Links (LinkedIn, GitHub, Portfolio, etc.)
                 </label>
                 <div className="space-y-2">
@@ -543,21 +544,21 @@ export default function ProfilePage() {
             <Link
               key={section.href}
               href={section.href}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all group"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all group"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
                       {section.title}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {section.count} item{section.count !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>
                 <svg
-                  className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors"
+                  className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -575,6 +576,13 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 }

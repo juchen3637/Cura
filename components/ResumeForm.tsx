@@ -235,7 +235,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
               <input
                 {...register("basics.name")}
                 onBlur={handleBlur}
-                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 placeholder="John Doe"
               />
             </div>
@@ -244,7 +244,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
               <input
                 {...register("basics.location")}
                 onBlur={handleBlur}
-                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 placeholder="San Francisco, CA"
               />
             </div>
@@ -254,7 +254,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                 {...register("basics.contact.email")}
                 onBlur={handleBlur}
                 type="email"
-                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 placeholder="john@example.com"
               />
             </div>
@@ -264,7 +264,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                 {...register("basics.contact.phone")}
                 onBlur={handleBlur}
                 type="tel"
-                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 placeholder="(555) 123-4567"
               />
             </div>
@@ -275,7 +275,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                   <input
                     {...register(`basics.contact.links.${idx}`)}
                     onBlur={handleBlur}
-                    className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                     placeholder="https://linkedin.com/in/johndoe"
                   />
                   <button
@@ -318,32 +318,32 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                 <input
                   {...register(`experience.${expIdx}.company`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="Company Name"
                 />
                 <input
                   {...register(`experience.${expIdx}.role`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="Job Title"
                 />
                 <input
                   {...register(`experience.${expIdx}.location`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="Location"
                 />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     {...register(`experience.${expIdx}.start`)}
                     onBlur={handleBlur}
-                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                     placeholder="YYYY-MM"
                   />
                   <input
                     {...register(`experience.${expIdx}.end`)}
                     onBlur={handleBlur}
-                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                     placeholder="YYYY-MM or Present"
                   />
                 </div>
@@ -359,7 +359,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                         )}
                         onBlur={handleBlur}
                         rows={2}
-                        className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                         placeholder="Describe your achievement..."
                       />
                       <div className="flex flex-col gap-1">
@@ -426,32 +426,32 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                 <input
                   {...register(`education.${idx}.institution`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="University Name"
                 />
                 <input
                   {...register(`education.${idx}.degree`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="Degree (e.g., B.S. Computer Science)"
                 />
                 <input
                   {...register(`education.${idx}.location`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="Location"
                 />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     {...register(`education.${idx}.start`)}
                     onBlur={handleBlur}
-                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                     placeholder="YYYY-MM"
                   />
                   <input
                     {...register(`education.${idx}.end`)}
                     onBlur={handleBlur}
-                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                     placeholder="YYYY-MM or Present"
                   />
                 </div>
@@ -497,7 +497,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                     <input
                       {...register(`skills.${catIdx}.skills.${skillIdx}`)}
                       onBlur={handleBlur}
-                      className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                       placeholder="Skill"
                     />
                     <button
@@ -548,13 +548,13 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
                 <input
                   {...register(`projects.${projIdx}.name`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="Project Name"
                 />
                 <input
                   {...register(`projects.${projIdx}.link`)}
                   onBlur={handleBlur}
-                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="Project Link (optional)"
                 />
                 <div>

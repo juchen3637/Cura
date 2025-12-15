@@ -8,6 +8,9 @@ import {
   useUpdateSkillCategory,
   useDeleteSkillCategory,
 } from "@/lib/hooks/useProfile";
+import { useToast } from "@/lib/hooks/useToast";
+import Toast from "@/components/Toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface SkillCategoryForm {
   id?: string;
@@ -21,9 +24,21 @@ export default function SkillsPage() {
   const createSkillCategory = useCreateSkillCategory();
   const updateSkillCategory = useUpdateSkillCategory();
   const deleteSkillCategory = useDeleteSkillCategory();
+  const { toast, hideToast, success, error: showError } = useToast();
 
   const [editing, setEditing] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
   const [formData, setFormData] = useState<SkillCategoryForm>({
     name: "",
     skills: [],
@@ -70,19 +85,27 @@ export default function SkillsPage() {
         });
       }
       handleCancel();
+      success("Skill category saved successfully!");
     } catch (error) {
-      alert("Failed to save skill category");
+      showError("Failed to save skill category");
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Delete "${name}" category?`)) {
-      try {
-        await deleteSkillCategory.mutateAsync(id);
-      } catch (error) {
-        alert("Failed to delete skill category");
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Skill Category",
+      message: `Are you sure you want to delete "${name}" category? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteSkillCategory.mutateAsync(id);
+          success("Skill category deleted successfully!");
+        } catch (error) {
+          showError("Failed to delete skill category");
+        }
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+      },
+    });
   };
 
   const addSkill = () => {
@@ -116,7 +139,7 @@ export default function SkillsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -145,13 +168,13 @@ export default function SkillsPage() {
 
         {/* Add/Edit Form */}
         {(showAddForm || editing) && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editing ? "Edit Skill Category" : "Add New Skill Category"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Category Name *
                 </label>
                 <input
@@ -161,14 +184,14 @@ export default function SkillsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="e.g., Programming Languages, Frameworks, Tools"
                 />
               </div>
 
               {/* Skills Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Skills
                 </label>
                 <div className="flex gap-2 mb-2">
@@ -244,7 +267,7 @@ export default function SkillsPage() {
             {skillCategories.map((category: any) => (
               <div
                 key={category.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -294,6 +317,22 @@ export default function SkillsPage() {
           )
         )}
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        variant="danger"
+      />
     </div>
   );
 }

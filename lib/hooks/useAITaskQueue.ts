@@ -207,10 +207,7 @@ export function useAITaskQueue() {
 
         if (!rateLimitResponse.ok) {
           if (rateLimitResponse.status === 429) {
-            const limitData = await rateLimitResponse.json();
-            throw new Error(
-              `Rate limit exceeded. You have ${limitData.remaining || 0} calls remaining this month. Resets ${new Date(limitData.reset_date).toLocaleDateString()}`
-            );
+            throw new Error("AI usage limit reached for this month. Please try again next month.");
           }
           throw new Error("Rate limit check failed");
         }

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useResumes, useDeleteResume, useDuplicateResume } from "@/lib/hooks/useResumes";
 import { useResumeStore } from "@/store/resumeStore";
+import { useToast } from "@/lib/hooks/useToast";
+import Toast from "@/components/Toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -12,29 +15,48 @@ export default function DashboardPage() {
   const deleteResume = useDeleteResume();
   const duplicateResume = useDuplicateResume();
   const { setResume } = useResumeStore();
+  const { toast, hideToast, success, error: showError } = useToast();
 
   const [uploading, setUploading] = useState(false);
   const [previewResume, setPreviewResume] = useState<any>(null);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const handleDelete = async (id: string, title: string) => {
-    if (confirm(`Are you sure you want to delete "${title}"?`)) {
-      try {
-        await deleteResume.mutateAsync(id);
-      } catch (error) {
-        alert("Failed to delete resume");
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Resume",
+      message: `Are you sure you want to delete "${title}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteResume.mutateAsync(id);
+          success("Resume deleted successfully!");
+        } catch (error) {
+          showError("Failed to delete resume");
+        }
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+      },
+    });
   };
 
   const handleDuplicate = async (id: string) => {
     try {
       const newResume = await duplicateResume.mutateAsync(id);
-      alert("Resume duplicated successfully!");
+      success("Resume duplicated successfully!");
     } catch (error) {
-      alert("Failed to duplicate resume");
+      showError("Failed to duplicate resume");
     }
   };
 
@@ -46,7 +68,7 @@ export default function DashboardPage() {
 
   const handleSaveTitle = async (id: string) => {
     if (!newTitle.trim()) {
-      alert("Title cannot be empty");
+      showError("Title cannot be empty");
       return;
     }
 
@@ -63,10 +85,11 @@ export default function DashboardPage() {
 
       if (!response.ok) throw new Error("Failed to update title");
 
+      success("Title updated successfully!");
       // Refresh the list
       window.location.reload();
     } catch (error) {
-      alert("Failed to update resume title");
+      showError("Failed to update resume title");
     } finally {
       setEditingTitle(null);
     }
@@ -105,7 +128,7 @@ export default function DashboardPage() {
     if (!file) return;
 
     if (file.type !== "application/pdf") {
-      alert("Please upload a PDF file.");
+      showError("Please upload a PDF file.");
       return;
     }
 
@@ -160,11 +183,11 @@ export default function DashboardPage() {
       // Load into editor
       setResume(parsedResume);
 
-      alert("Resume imported and saved successfully! Opening editor...");
+      success("Resume imported and saved successfully! Opening editor...");
       router.push(`/resume-editor?resumeId=${savedResume.id}`);
     } catch (error) {
       console.error("Import error:", error);
-      alert("Failed to import resume from PDF. Please try again.");
+      showError("Failed to import resume from PDF. Please try again.");
     } finally {
       setUploading(false);
       // Reset input
@@ -225,7 +248,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -238,13 +261,13 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <p className="text-gray-600">
                 Manage your resumes and create new ones
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Link
                 href="/profile"
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
@@ -326,10 +349,10 @@ export default function DashboardPage() {
                 {resumes.map((resume: any) => (
                   <div
                     key={resume.id}
-                    className={`bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-all cursor-pointer ${
+                    className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6 hover:shadow-md transition-all cursor-pointer ${
                       previewResume?.id === resume.id
-                        ? "border-blue-500 ring-2 ring-blue-200"
-                        : "border-gray-200"
+                        ? "border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800"
+                        : "border-gray-200 dark:border-gray-700"
                     }`}
                     onClick={() => setPreviewResume(resume)}
                   >
@@ -342,7 +365,7 @@ export default function DashboardPage() {
                           type="text"
                           value={newTitle}
                           onChange={(e) => setNewTitle(e.target.value)}
-                          className="flex-1 px-2 py-1 border border-blue-500 rounded text-sm"
+                          className="flex-1 px-2 py-1 border border-blue-500 dark:bg-gray-700 dark:text-white dark:border-blue-400 rounded text-sm"
                           autoFocus
                           onKeyPress={(e) => {
                             if (e.key === "Enter") handleSaveTitle(resume.id);
@@ -440,12 +463,12 @@ export default function DashboardPage() {
 
           {/* Preview Panel */}
           {previewResume && (
-            <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Preview</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Preview</h3>
                 <button
                   onClick={() => setPreviewResume(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -454,7 +477,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Resume Preview */}
-              <div className="bg-gray-50 p-8 rounded-lg overflow-auto max-h-[800px]">
+              <div className="bg-gray-50 dark:bg-gray-900 p-8 rounded-lg overflow-auto max-h-[800px]">
                 <div className="bg-white p-10 shadow-sm max-w-[8.5in] mx-auto">
                   {/* Header */}
                   <div className="text-center mb-6">
@@ -548,6 +571,22 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        variant="danger"
+      />
     </div>
   );
 }

@@ -6,7 +6,6 @@ import ModeSelector from "@/components/ai-workspace/ModeSelector";
 import AnalyzeMode from "@/components/ai-workspace/AnalyzeMode";
 import BuildCuratedMode from "@/components/ai-workspace/BuildCuratedMode";
 import TaskQueueSidePanel from "@/components/ai-workspace/TaskQueueSidePanel";
-import UsageDisplay from "@/components/UsageDisplay";
 import { useAITaskQueue } from "@/lib/hooks/useAITaskQueue";
 import { useResumeStore } from "@/store/resumeStore";
 
@@ -90,9 +89,6 @@ export default function AIWorkspace() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Usage Display */}
-        <UsageDisplay />
-
         {/* Header */}
         <div className="mb-8">
           <p className="text-gray-600 dark:text-gray-300 mb-6">

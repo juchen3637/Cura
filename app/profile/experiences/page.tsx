@@ -8,6 +8,9 @@ import {
   useUpdateExperience,
   useDeleteExperience,
 } from "@/lib/hooks/useProfile";
+import { useToast } from "@/lib/hooks/useToast";
+import Toast from "@/components/Toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface ExperienceForm {
   id?: string;
@@ -24,9 +27,21 @@ export default function ExperiencesPage() {
   const createExperience = useCreateExperience();
   const updateExperience = useUpdateExperience();
   const deleteExperience = useDeleteExperience();
+  const { toast, hideToast, success, error: showError } = useToast();
 
   const [editing, setEditing] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
   const [formData, setFormData] = useState<ExperienceForm>({
     company: "",
     role: "",
@@ -90,19 +105,27 @@ export default function ExperiencesPage() {
         });
       }
       handleCancel();
+      success("Experience saved successfully!");
     } catch (error) {
-      alert("Failed to save experience");
+      showError("Failed to save experience");
     }
   };
 
   const handleDelete = async (id: string, company: string) => {
-    if (confirm(`Delete experience at ${company}?`)) {
-      try {
-        await deleteExperience.mutateAsync(id);
-      } catch (error) {
-        alert("Failed to delete experience");
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Experience",
+      message: `Are you sure you want to delete your experience at ${company}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteExperience.mutateAsync(id);
+          success("Experience deleted successfully!");
+        } catch (error) {
+          showError("Failed to delete experience");
+        }
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+      },
+    });
   };
 
   const addBullet = () => {
@@ -129,7 +152,7 @@ export default function ExperiencesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -158,14 +181,14 @@ export default function ExperiencesPage() {
 
         {/* Add/Edit Form */}
         {(showAddForm || editing) && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editing ? "Edit Experience" : "Add New Experience"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Company *
                   </label>
                   <input
@@ -175,11 +198,11 @@ export default function ExperiencesPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, company: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Role *
                   </label>
                   <input
@@ -189,13 +212,13 @@ export default function ExperiencesPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, role: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Location
                 </label>
                 <input
@@ -204,14 +227,14 @@ export default function ExperiencesPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, location: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="City, State or Remote"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Start Date * (YYYY-MM)
                   </label>
                   <input
@@ -223,11 +246,11 @@ export default function ExperiencesPage() {
                     }
                     placeholder="2020-01"
                     pattern="\d{4}-\d{2}"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     End Date (YYYY-MM or Present)
                   </label>
                   <input
@@ -237,14 +260,14 @@ export default function ExperiencesPage() {
                       setFormData({ ...formData, end_date: e.target.value })
                     }
                     placeholder="2023-06 or Present"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               {/* Bullets */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Achievements & Responsibilities
                 </label>
                 <div className="space-y-2">
@@ -253,7 +276,7 @@ export default function ExperiencesPage() {
                       <textarea
                         value={bullet}
                         onChange={(e) => updateBullet(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                         rows={2}
                         placeholder="• Describe your achievement or responsibility..."
                       />
@@ -311,7 +334,7 @@ export default function ExperiencesPage() {
             {experiences.map((exp: any) => (
               <div
                 key={exp.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -364,6 +387,22 @@ export default function ExperiencesPage() {
           )
         )}
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        variant="danger"
+      />
     </div>
   );
 }

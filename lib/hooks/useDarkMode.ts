@@ -5,11 +5,10 @@ export function useDarkMode() {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    // Check localStorage and system preference
+    // Check localStorage, default to light mode
     const stored = localStorage.getItem("darkMode");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-    const initialDark = stored ? stored === "true" : prefersDark;
+    const initialDark = stored ? stored === "true" : false;
     setIsDark(initialDark);
     setIsHydrated(true);
 

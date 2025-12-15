@@ -8,6 +8,9 @@ import {
   useUpdateEducation,
   useDeleteEducation,
 } from "@/lib/hooks/useProfile";
+import { useToast } from "@/lib/hooks/useToast";
+import Toast from "@/components/Toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface EducationForm {
   id?: string;
@@ -23,9 +26,21 @@ export default function EducationPage() {
   const createEducation = useCreateEducation();
   const updateEducation = useUpdateEducation();
   const deleteEducation = useDeleteEducation();
+  const { toast, hideToast, success, error: showError } = useToast();
 
   const [editing, setEditing] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
   const [formData, setFormData] = useState<EducationForm>({
     institution: "",
     degree: "",
@@ -84,19 +99,27 @@ export default function EducationPage() {
         });
       }
       handleCancel();
+      success("Education saved successfully!");
     } catch (error) {
-      alert("Failed to save education");
+      showError("Failed to save education");
     }
   };
 
   const handleDelete = async (id: string, institution: string) => {
-    if (confirm(`Delete education at ${institution}?`)) {
-      try {
-        await deleteEducation.mutateAsync(id);
-      } catch (error) {
-        alert("Failed to delete education");
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Education",
+      message: `Are you sure you want to delete ${institution}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteEducation.mutateAsync(id);
+          success("Education deleted successfully!");
+        } catch (error) {
+          showError("Failed to delete education");
+        }
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+      },
+    });
   };
 
   if (isLoading) {
@@ -108,7 +131,7 @@ export default function EducationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -137,13 +160,13 @@ export default function EducationPage() {
 
         {/* Add/Edit Form */}
         {(showAddForm || editing) && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editing ? "Edit Education" : "Add New Education"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Institution *
                 </label>
                 <input
@@ -153,13 +176,13 @@ export default function EducationPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, institution: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="University of California, Berkeley"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Degree *
                 </label>
                 <input
@@ -169,13 +192,13 @@ export default function EducationPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, degree: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="Bachelor of Science in Computer Science"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Location
                 </label>
                 <input
@@ -184,14 +207,14 @@ export default function EducationPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, location: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="Berkeley, CA"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Start Date (YYYY or YYYY-MM)
                   </label>
                   <input
@@ -201,11 +224,11 @@ export default function EducationPage() {
                       setFormData({ ...formData, start_date: e.target.value })
                     }
                     placeholder="2016 or 2016-09"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     End Date (YYYY or YYYY-MM)
                   </label>
                   <input
@@ -215,7 +238,7 @@ export default function EducationPage() {
                       setFormData({ ...formData, end_date: e.target.value })
                     }
                     placeholder="2020 or 2020-05"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -247,7 +270,7 @@ export default function EducationPage() {
             {education.map((edu: any) => (
               <div
                 key={edu.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -294,6 +317,22 @@ export default function EducationPage() {
           )
         )}
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        variant="danger"
+      />
     </div>
   );
 }

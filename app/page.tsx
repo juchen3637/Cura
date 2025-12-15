@@ -238,28 +238,28 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-6 text-center">Why Choose Cura?</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div>
-              <h3 className="text-xl font-bold mb-3">⚡ Save Time</h3>
+              <h3 className="text-xl font-bold mb-3">Save Time</h3>
               <p className="text-blue-100">
                 Stop manually editing your resume for every application. Create tailored resumes in
                 minutes, not hours.
               </p>
             </div>
             <div>
-              <h3 className="text-xl font-bold mb-3">🎯 Better Results</h3>
+              <h3 className="text-xl font-bold mb-3">Better Results</h3>
               <p className="text-blue-100">
                 AI-optimized resumes that highlight your most relevant experiences increase your
                 chances of landing interviews.
               </p>
             </div>
             <div>
-              <h3 className="text-xl font-bold mb-3">📊 Stay Organized</h3>
+              <h3 className="text-xl font-bold mb-3">Stay Organized</h3>
               <p className="text-blue-100">
                 Keep all your career information in one place. Never lose track of your accomplishments
                 or which resume you sent where.
               </p>
             </div>
             <div>
-              <h3 className="text-xl font-bold mb-3">🤖 AI-Powered</h3>
+              <h3 className="text-xl font-bold mb-3">AI-Powered</h3>
               <p className="text-blue-100">
                 Leverage cutting-edge AI to craft compelling bullet points and match your experience
                 to job requirements.

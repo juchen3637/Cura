@@ -54,7 +54,16 @@ export function useUpdateResume() {
 export function useDeleteResume() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: deleteResume,
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/resumes/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete resume");
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resumes"] });
     },

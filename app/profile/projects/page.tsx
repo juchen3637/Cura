@@ -8,6 +8,9 @@ import {
   useUpdateProject,
   useDeleteProject,
 } from "@/lib/hooks/useProfile";
+import { useToast } from "@/lib/hooks/useToast";
+import Toast from "@/components/Toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface ProjectForm {
   id?: string;
@@ -22,9 +25,21 @@ export default function ProjectsPage() {
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
+  const { toast, hideToast, success, error: showError } = useToast();
 
   const [editing, setEditing] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
   const [formData, setFormData] = useState<ProjectForm>({
     name: "",
     link: "",
@@ -78,19 +93,27 @@ export default function ProjectsPage() {
         });
       }
       handleCancel();
+      success("Project saved successfully!");
     } catch (error) {
-      alert("Failed to save project");
+      showError("Failed to save project");
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Delete project "${name}"?`)) {
-      try {
-        await deleteProject.mutateAsync(id);
-      } catch (error) {
-        alert("Failed to delete project");
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Project",
+      message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteProject.mutateAsync(id);
+          success("Project deleted successfully!");
+        } catch (error) {
+          showError("Failed to delete project");
+        }
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+      },
+    });
   };
 
   const addBullet = () => {
@@ -117,7 +140,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -146,13 +169,13 @@ export default function ProjectsPage() {
 
         {/* Add/Edit Form */}
         {(showAddForm || editing) && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editing ? "Edit Project" : "Add New Project"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Project Name *
                 </label>
                 <input
@@ -162,13 +185,13 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="E-commerce Platform"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Project Link
                 </label>
                 <input
@@ -177,14 +200,14 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, link: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="https://github.com/username/project"
                 />
               </div>
 
               {/* Bullets */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Description & Achievements
                 </label>
                 <div className="space-y-2">
@@ -193,7 +216,7 @@ export default function ProjectsPage() {
                       <textarea
                         value={bullet}
                         onChange={(e) => updateBullet(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                         rows={2}
                         placeholder="• Built with React and Node.js, serving 10k+ users"
                       />
@@ -251,7 +274,7 @@ export default function ProjectsPage() {
             {projects.map((proj: any) => (
               <div
                 key={proj.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -310,6 +333,22 @@ export default function ProjectsPage() {
           )
         )}
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        variant="danger"
+      />
     </div>
   );
 }

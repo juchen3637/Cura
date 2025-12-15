@@ -346,7 +346,7 @@ export default function AnalyzeMode({ addTask }: AnalyzeModeProps) {
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
           placeholder="Paste the job description here..."
-          className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-700"
+          className="w-full h-64 px-4 py-3 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-700 dark:text-gray-100"
         />
         <p className="mt-2 text-sm text-gray-500">
           Copy and paste the full job description from the job posting

@@ -136,7 +136,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
             <span className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-semibold rounded-full">
-              ADMIN
+              ADMIN ONLY
             </span>
           </div>
           <p className="text-gray-600 dark:text-gray-400">

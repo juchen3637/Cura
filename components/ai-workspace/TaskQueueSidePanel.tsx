@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { AITask } from "@/lib/hooks/useAITaskQueue";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface TaskQueueSidePanelProps {
   tasks: AITask[];
@@ -17,6 +19,18 @@ export default function TaskQueueSidePanel({
   onClearCompleted,
   onDeleteTask,
 }: TaskQueueSidePanelProps) {
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
   const pendingTasks = tasks.filter((t) => t.status === "pending");
   const runningTasks = tasks.filter((t) => t.status === "running");
   const completedTasks = tasks.filter((t) => t.status === "completed");
@@ -51,7 +65,7 @@ export default function TaskQueueSidePanel({
 
       {/* Side Panel */}
       <div
-        className={`fixed right-0 top-16 bottom-0 w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-2xl z-30 transform transition-transform duration-300 print:hidden overflow-y-auto ${
+        className={`fixed right-0 top-16 bottom-0 w-full sm:w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-2xl z-30 transform transition-transform duration-300 print:hidden overflow-y-auto ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -70,7 +84,7 @@ export default function TaskQueueSidePanel({
           </div>
 
           {/* Queue Stats */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400">Queued</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{pendingTasks.length}</p>
@@ -149,11 +163,18 @@ export default function TaskQueueSidePanel({
                       <button
                         onClick={() => {
                           if (task.status === "running") {
-                            if (!confirm("This task is currently running. Are you sure you want to cancel it?")) {
-                              return;
-                            }
+                            setConfirmDialog({
+                              isOpen: true,
+                              title: "Cancel Running Task",
+                              message: "This task is currently running. Are you sure you want to cancel it?",
+                              onConfirm: () => {
+                                onDeleteTask(task.id);
+                                setConfirmDialog({ ...confirmDialog, isOpen: false });
+                              },
+                            });
+                          } else {
+                            onDeleteTask(task.id);
                           }
-                          onDeleteTask(task.id);
                         }}
                         className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                         title="Delete task"
@@ -194,7 +215,7 @@ export default function TaskQueueSidePanel({
                     )}
                     {task.status === "completed" && (
                       <>
-                        <span className="text-green-700 dark:text-green-400 flex-shrink-0">✓ Completed</span>
+                        <span className="text-green-700 dark:text-green-400 flex-shrink-0">Completed</span>
                         <button
                           onClick={() => task.onComplete?.(task.result)}
                           className="ml-auto px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs font-medium"
@@ -204,10 +225,10 @@ export default function TaskQueueSidePanel({
                       </>
                     )}
                     {task.status === "failed" && (
-                      <span className="text-red-700 dark:text-red-400 text-xs">✗ {task.error || "Failed"}</span>
+                      <span className="text-red-700 dark:text-red-400 text-xs">Failed: {task.error || "Unknown error"}</span>
                     )}
                     {task.status === "pending" && (
-                      <span className="text-gray-500 dark:text-gray-400">⏱ Queued</span>
+                      <span className="text-gray-500 dark:text-gray-400">Queued</span>
                     )}
                   </div>
                 </div>
@@ -224,6 +245,15 @@ export default function TaskQueueSidePanel({
           onClick={onToggle}
         ></div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        variant="warning"
+      />
     </>
   );
 }

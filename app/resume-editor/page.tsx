@@ -9,8 +9,11 @@ import ResumeForm from "@/components/ResumeForm";
 import ResumePreview from "@/components/ResumePreview";
 import ResumeDiffPreview from "@/components/editor/ResumeDiffPreview";
 import { exportToPdf } from "@/lib/exporters/pdfExporter";
+import { useToast } from "@/lib/hooks/useToast";
+import Toast from "@/components/Toast";
 
 function ResumeEditorContent() {
+  const { toast, hideToast, success, error: showError, warning } = useToast();
   const searchParams = useSearchParams();
   const resumeIdFromUrl = searchParams.get("resumeId");
 
@@ -96,7 +99,7 @@ function ResumeEditorContent() {
     if (!file) return;
 
     if (file.type !== "application/pdf") {
-      alert("Please upload a PDF file.");
+      showError("Please upload a PDF file.");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -116,10 +119,7 @@ function ResumeEditorContent() {
 
         if (!rateLimitResponse.ok) {
           if (rateLimitResponse.status === 429) {
-            const limitData = await rateLimitResponse.json();
-            alert(
-              `PDF import limit exceeded. You have ${limitData.remaining || 0} imports remaining this month. Limit resets on ${new Date(limitData.reset_date).toLocaleDateString()}.`
-            );
+            warning("You've reached your PDF import limit for this month. Please try again next month.");
             setImporting(false);
             if (fileInputRef.current) {
               fileInputRef.current.value = "";
@@ -170,17 +170,17 @@ function ResumeEditorContent() {
         if (saveResponse.ok) {
           const savedResume = await saveResponse.json();
           setCurrentResumeId(savedResume.id);
-          alert("Resume imported and saved to your account!");
+          success("Resume imported and saved to your account!");
         }
       } else {
-        alert("Resume imported successfully!");
+        success("Resume imported successfully!");
       }
 
       setResume(parsedResume);
       setOriginalResume(parsedResume);
     } catch (error) {
       console.error("Import error:", error);
-      alert("Failed to import resume from PDF. Please try again.");
+      showError("Failed to import resume from PDF. Please try again.");
     } finally {
       setImporting(false);
       if (fileInputRef.current) {
@@ -225,7 +225,7 @@ function ResumeEditorContent() {
 
   const handleSaveClick = () => {
     if (!user) {
-      alert("Please sign in to save your resume");
+      warning("Please sign in to save your resume");
       return;
     }
 
@@ -245,7 +245,7 @@ function ResumeEditorContent() {
 
   const handleSaveConfirm = async () => {
     if (!resumeTitle.trim()) {
-      alert("Please enter a resume title");
+      showError("Please enter a resume title");
       return;
     }
 
@@ -258,7 +258,7 @@ function ResumeEditorContent() {
       );
 
       if (duplicateExists) {
-        alert(`A resume named "${resumeTitle}" already exists. Please choose a different name.`);
+        showError(`A resume named "${resumeTitle}" already exists. Please choose a different name.`);
         return;
       }
     }
@@ -280,7 +280,7 @@ function ResumeEditorContent() {
         if (!response.ok) throw new Error("Failed to update resume");
         setOriginalResume(resume);
         setShowSaveDialog(false);
-        alert("Resume updated successfully!");
+        success("Resume updated successfully!");
       } else {
         // Create new
         const response = await fetch("/api/resumes", {
@@ -299,10 +299,10 @@ function ResumeEditorContent() {
         setCurrentResumeId(savedResume.id);
         setOriginalResume(resume);
         setShowSaveDialog(false);
-        alert("Resume saved successfully!");
+        success("Resume saved successfully!");
       }
     } catch (error) {
-      alert("Failed to save resume");
+      showError("Failed to save resume");
     }
   };
 
@@ -337,9 +337,9 @@ function ResumeEditorContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white print:min-h-0">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 print:bg-white print:min-h-0">
       {/* Header Section */}
-      <div className="bg-white border-b border-gray-200 print:hidden">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -430,8 +430,8 @@ function ResumeEditorContent() {
           {/* Left - Editor */}
           <div className="space-y-6 print:hidden">
             {/* Section Tabs */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="border-b border-gray-200 overflow-x-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                 <nav className="flex p-1">
                   {sections.map((section) => (
                     <button
@@ -439,8 +439,8 @@ function ResumeEditorContent() {
                       onClick={() => setActiveSection(section.id)}
                       className={`flex-1 min-w-[100px] px-3 py-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
                         activeSection === section.id
-                          ? "bg-blue-50 text-blue-700 shadow-sm"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm"
+                          : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
                       }`}
                     >
                       {section.label}
@@ -469,25 +469,32 @@ function ResumeEditorContent() {
 
           {/* Right - Preview */}
           <div className="print:p-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:sticky lg:top-24 print:border-0 print:shadow-none print:p-0">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 lg:sticky lg:top-24 print:border-0 print:shadow-none print:p-0">
               <div className="flex items-center justify-between mb-4 print:hidden">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {hasPendingSuggestions ? "Review Changes" : "Live Preview"}
                 </h2>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                     <span className="w-2 h-2 bg-green-400 rounded-full mr-1.5 animate-pulse"></span>
                     Live
                   </span>
                 </div>
               </div>
-              <div className="bg-white print:bg-white">
+              <div className="bg-white dark:bg-white print:bg-white">
                 {hasPendingSuggestions ? <ResumeDiffPreview /> : <ResumePreview />}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
 
       {/* Save Dialog */}
       {showSaveDialog && (
@@ -497,19 +504,19 @@ function ResumeEditorContent() {
             onClick={() => setShowSaveDialog(false)}
           ></div>
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 {currentResumeId ? "Update Resume" : "Save Resume"}
               </h3>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Resume Title
                 </label>
                 <input
                   type="text"
                   value={resumeTitle}
                   onChange={(e) => setResumeTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., Software Engineer - Google"
                   autoFocus
                   onKeyPress={(e) => {
