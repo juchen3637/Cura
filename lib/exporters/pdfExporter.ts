@@ -1,8 +1,22 @@
 import { Resume } from "@/types/resume";
 
-export function exportToPdf() {
+export function exportToPdf(filename?: string) {
+  // Set the document title temporarily for the PDF filename
+  const originalTitle = document.title;
+  
+  if (filename) {
+    // Clean the filename and add .pdf extension
+    const cleanFilename = filename.replace(/[^a-zA-Z0-9\s\-_()]/g, "").trim();
+    document.title = cleanFilename || "Resume";
+  }
+  
   // Use browser's print functionality for PDF export
   window.print();
+  
+  // Restore the original title after a brief delay
+  setTimeout(() => {
+    document.title = originalTitle;
+  }, 1000);
 }
 
 export function downloadJson(resume: Resume, filename: string = "resume.json") {

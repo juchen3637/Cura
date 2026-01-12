@@ -9,7 +9,8 @@
       "mcp__serena__initial_instructions",
       "mcp__serena__read_memory",
       "mcp__serena__think_about_collected_information",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,27 +1,83 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Resume } from "@/types/resume";
+import { Resume, ResumeLink } from "@/types/resume";
 import { InlineSuggestion } from "@/types/suggestion";
+
+// Normalize resume data to handle backward compatibility
+// Converts old string[] links to new ResumeLink[] format
+function normalizeResume(resume: Resume): Resume {
+  if (!resume?.basics?.contact?.links) return resume;
+  
+  const normalizedLinks: ResumeLink[] = resume.basics.contact.links.map((link: any) => {
+    // If already in new format, return as is
+    if (typeof link === 'object' && 'url' in link) {
+      return { url: link.url || '', displayName: link.displayName || '' };
+    }
+    // Convert string to new format
+    return { url: String(link), displayName: '' };
+  });
+  
+  return {
+    ...resume,
+    basics: {
+      ...resume.basics,
+      contact: {
+        ...resume.basics.contact,
+        links: normalizedLinks,
+      },
+    },
+  };
+}
 
 interface AISuggestion {
   type: "resume" | "coverLetter";
   suggestions: string[];
 }
 
+export interface ResumeStyleSettings {
+  bodyTextSize: number;      // pt
+  nameSize: number;          // pt
+  sectionHeaderSize: number; // pt
+  contactLineSize: number;   // pt
+  sectionMargin: number;     // tailwind spacing unit (0.25rem each)
+  entrySpacing: number;      // tailwind spacing unit
+  bulletIndent: number;      // tailwind spacing unit
+  headerMargin: number;      // tailwind spacing unit
+  lineHeight: "tight" | "snug" | "normal";
+}
+
+export const defaultStyleSettings: ResumeStyleSettings = {
+  bodyTextSize: 10,
+  nameSize: 16,
+  sectionHeaderSize: 11,
+  contactLineSize: 10,
+  sectionMargin: 1.5,
+  entrySpacing: 1,
+  bulletIndent: 2,
+  headerMargin: 1,
+  lineHeight: "snug",
+};
+
 interface ResumeState {
   resume: Resume;
+  styleSettings: ResumeStyleSettings;
   aiEnabled: boolean;
   aiSuggestions: AISuggestion[];
   inlineSuggestions: InlineSuggestion[];
   showSuggestions: boolean;
   activeSuggestionId: string | null;
+  // Task metadata for auto-naming resumes
+  currentTaskMeta: { jobTitle: string; company: string } | null;
   setResume: (resume: Resume) => void;
   updateResume: (updater: (resume: Resume) => Resume) => void;
+  setStyleSettings: (settings: Partial<ResumeStyleSettings>) => void;
+  resetStyleSettings: () => void;
   setAiEnabled: (enabled: boolean) => void;
   setAiSuggestions: (suggestions: AISuggestion[]) => void;
   setInlineSuggestions: (suggestions: InlineSuggestion[]) => void;
   setShowSuggestions: (show: boolean) => void;
   setActiveSuggestion: (id: string | null) => void;
+  setCurrentTaskMeta: (meta: { jobTitle: string; company: string } | null) => void;
   applySuggestion: (id: string) => void;
   rejectSuggestion: (id: string) => void;
   clearSuggestions: () => void;
@@ -50,18 +106,25 @@ export const useResumeStore = create<ResumeState>()(
   persist(
     (set) => ({
       resume: defaultResume,
+      styleSettings: defaultStyleSettings,
       aiEnabled: false,
       aiSuggestions: [],
       inlineSuggestions: [],
       showSuggestions: false,
       activeSuggestionId: null,
-      setResume: (resume) => set({ resume }),
+      currentTaskMeta: null,
+      setResume: (resume) => set({ resume: normalizeResume(resume) }),
       updateResume: (updater) => set((state) => ({ resume: updater(state.resume) })),
+      setStyleSettings: (settings) => set((state) => ({ 
+        styleSettings: { ...state.styleSettings, ...settings } 
+      })),
+      resetStyleSettings: () => set({ styleSettings: defaultStyleSettings }),
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
       setAiSuggestions: (aiSuggestions) => set({ aiSuggestions }),
       setInlineSuggestions: (inlineSuggestions) => set({ inlineSuggestions }),
       setShowSuggestions: (showSuggestions) => set({ showSuggestions }),
       setActiveSuggestion: (activeSuggestionId) => set({ activeSuggestionId }),
+      setCurrentTaskMeta: (currentTaskMeta) => set({ currentTaskMeta }),
   applySuggestion: (id) =>
     set((state) => {
       const suggestion = state.inlineSuggestions.find((s) => s.id === id);
@@ -151,15 +214,27 @@ export const useResumeStore = create<ResumeState>()(
       ),
     })),
       clearSuggestions: () =>
-        set({ aiSuggestions: [], inlineSuggestions: [], showSuggestions: false, activeSuggestionId: null }),
+        set({ aiSuggestions: [], inlineSuggestions: [], showSuggestions: false, activeSuggestionId: null, currentTaskMeta: null }),
     }),
     {
       name: "resume-storage",
       partialize: (state) => ({
         resume: state.resume,
+        styleSettings: state.styleSettings,
         inlineSuggestions: state.inlineSuggestions,
         showSuggestions: state.showSuggestions,
+        currentTaskMeta: state.currentTaskMeta,
       }),
+      // Normalize data when rehydrating from localStorage
+      onRehydrateStorage: () => (state) => {
+        if (state?.resume) {
+          state.resume = normalizeResume(state.resume);
+        }
+        // Ensure styleSettings has all properties (merge with defaults)
+        if (state?.styleSettings) {
+          state.styleSettings = { ...defaultStyleSettings, ...state.styleSettings };
+        }
+      },
     }
   )
 );

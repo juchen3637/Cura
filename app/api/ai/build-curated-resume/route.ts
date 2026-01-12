@@ -1,21 +1,34 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  complete,
+  getActiveProvider,
+  isProviderConfigured,
+  parseJSONResponse,
+  AIProvider,
+} from "@/lib/aiProvider";
 
 export const runtime = "edge";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
-
 export async function POST(req: Request) {
   try {
-    const { jobDescription, preferences } = await req.json();
+    const { jobDescription, preferences, provider: requestedProvider } = await req.json();
 
     if (!jobDescription) {
       return NextResponse.json(
         { error: "Job description is required" },
         { status: 400 }
+      );
+    }
+
+    // Determine which provider to use
+    const provider: AIProvider = requestedProvider || getActiveProvider();
+
+    if (!isProviderConfigured(provider)) {
+      const envVar = provider === "anthropic" ? "ANTHROPIC_API_KEY" : "GOOGLE_AI_API_KEY";
+      return NextResponse.json(
+        { error: `AI provider "${provider}" is not configured. Please set ${envVar}.` },
+        { status: 503 }
       );
     }
 
@@ -59,7 +72,7 @@ export async function POST(req: Request) {
       skillCategories: skillCategories.length,
     });
 
-    // Build prompt for Claude
+    // Build prompt for AI
     const prompt = `You are an expert resume builder and career counselor. You will help create an optimized resume from a candidate's profile data.
 
 USER'S PROFILE DATA:
@@ -147,29 +160,18 @@ CRITICAL INSTRUCTIONS:
 - Tailor bullets to emphasize job-relevant achievements, but keep them factual
 - Return ONLY the JSON object, no additional text`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+    const responseText = await complete(prompt, {
+      provider,
+      maxTokens: 4000,
     });
-
-    const responseText =
-      message.content[0].type === "text" ? message.content[0].text : "";
 
     // Parse the JSON response
     let selection;
     try {
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      const jsonString = jsonMatch ? jsonMatch[1] : responseText;
-      selection = JSON.parse(jsonString);
+      selection = parseJSONResponse(responseText);
       console.log("AI Selection:", selection);
     } catch (parseError) {
-      console.error("Failed to parse Claude response:", parseError);
+      console.error("Failed to parse AI response:", parseError);
       console.error("Raw response:", responseText);
       return NextResponse.json(
         { error: "Failed to parse AI response" },
@@ -237,7 +239,8 @@ CRITICAL INSTRUCTIONS:
         contact: {
           email: profile?.email || "",
           phone: profile?.phone || "",
-          links: profile?.links || [],
+          // Convert profile links (string[]) to resume links format
+          links: (profile?.links || []).map((url: string) => ({ url, displayName: "" })),
         },
         summary: "",
       },
@@ -314,6 +317,7 @@ CRITICAL INSTRUCTIONS:
       },
       reasoning: selection.reasoning,
       inlineSuggestions: inlineSuggestions,
+      provider, // Include which provider was used
     });
   } catch (error) {
     console.error("Error building curated resume:", error);

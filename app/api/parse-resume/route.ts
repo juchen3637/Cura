@@ -1,15 +1,17 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import {
+  completeWithDocument,
+  getActiveProvider,
+  isProviderConfigured,
+  parseJSONResponse,
+  AIProvider,
+} from "@/lib/aiProvider";
 
 export const runtime = "edge";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
-
 export async function POST(req: Request) {
   try {
-    const { pdfData, mediaType } = await req.json();
+    const { pdfData, mediaType, provider: requestedProvider } = await req.json();
 
     if (!pdfData) {
       return NextResponse.json(
@@ -18,19 +20,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // Build the message content with PDF document
-    const messageContent = [
-      {
-        type: "document" as const,
-        source: {
-          type: "base64" as const,
-          media_type: (mediaType || "application/pdf") as "application/pdf",
-          data: pdfData,
-        },
-      },
-      {
-        type: "text" as const,
-        text: `You are a resume parsing expert. Please analyze the uploaded resume PDF and extract all information into a structured JSON format.
+    // Determine which provider to use
+    const provider: AIProvider = requestedProvider || getActiveProvider();
+
+    if (!isProviderConfigured(provider)) {
+      const envVar = provider === "anthropic" ? "ANTHROPIC_API_KEY" : "GOOGLE_AI_API_KEY";
+      return NextResponse.json(
+        { error: `AI provider "${provider}" is not configured. Please set ${envVar}.` },
+        { status: 503 }
+      );
+    }
+
+    const prompt = `You are a resume parsing expert. Please analyze the uploaded resume PDF and extract all information into a structured JSON format.
 
 Extract the following information:
 
@@ -94,35 +95,21 @@ Important guidelines:
 - Remove any mid-sentence line breaks or hyphenation
 - Each bullet point should be one complete sentence or phrase without internal line breaks
 - Do not add information that is not in the resume
-- Return ONLY the JSON object, no additional text or explanation`,
-      },
-    ];
+- Return ONLY the JSON object, no additional text or explanation`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      messages: [
-        {
-          role: "user",
-          content: messageContent as any, // Document type not in SDK types yet
-        },
-      ],
-    });
+    const result = await completeWithDocument(
+      prompt,
+      { data: pdfData, mediaType: mediaType || "application/pdf" },
+      { provider, maxTokens: 4000 }
+    );
 
-    const responseText = message.content[0].type === "text"
-      ? message.content[0].text
-      : "";
-
-    // Parse the JSON response from Claude
+    // Parse the JSON response
     let resumeData;
     try {
-      // Try to extract JSON if it's wrapped in markdown code blocks
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      const jsonString = jsonMatch ? jsonMatch[1] : responseText;
-      resumeData = JSON.parse(jsonString);
+      resumeData = parseJSONResponse(result.text);
     } catch (parseError) {
-      console.error("Failed to parse Claude response:", parseError);
-      console.error("Raw response:", responseText);
+      console.error("Failed to parse AI response:", parseError);
+      console.error("Raw response:", result.text);
       return NextResponse.json(
         { error: "Failed to parse resume data from PDF" },
         { status: 500 }
@@ -131,11 +118,11 @@ Important guidelines:
 
     // Post-process: Clean up any remaining line breaks in bullets
     const cleanBullets = (bullets: string[]) => {
-      return bullets.map(bullet =>
+      return bullets.map((bullet) =>
         bullet
-          .replace(/\n/g, ' ')  // Replace newlines with spaces
-          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-          .trim()                 // Remove leading/trailing spaces
+          .replace(/\n/g, " ") // Replace newlines with spaces
+          .replace(/\s+/g, " ") // Replace multiple spaces with single space
+          .trim() // Remove leading/trailing spaces
       );
     };
 
@@ -143,7 +130,7 @@ Important guidelines:
     if (resumeData.experience && Array.isArray(resumeData.experience)) {
       resumeData.experience = resumeData.experience.map((exp: any) => ({
         ...exp,
-        bullets: exp.bullets ? cleanBullets(exp.bullets) : []
+        bullets: exp.bullets ? cleanBullets(exp.bullets) : [],
       }));
     }
 
@@ -151,11 +138,26 @@ Important guidelines:
     if (resumeData.projects && Array.isArray(resumeData.projects)) {
       resumeData.projects = resumeData.projects.map((proj: any) => ({
         ...proj,
-        bullets: proj.bullets ? cleanBullets(proj.bullets) : []
+        bullets: proj.bullets ? cleanBullets(proj.bullets) : [],
       }));
     }
 
-    return NextResponse.json(resumeData);
+    // Convert links to new format (AI may return string[] or ResumeLink[])
+    if (resumeData.basics?.contact?.links && Array.isArray(resumeData.basics.contact.links)) {
+      resumeData.basics.contact.links = resumeData.basics.contact.links.map((link: any) => {
+        // If it's already in the new format, keep it
+        if (typeof link === 'object' && 'url' in link) {
+          return { url: link.url || '', displayName: link.displayName || '' };
+        }
+        // If it's a string, convert to new format
+        return { url: String(link), displayName: '' };
+      });
+    }
+
+    return NextResponse.json({
+      ...resumeData,
+      _meta: { provider: result.provider, model: result.model },
+    });
   } catch (error) {
     console.error("Error parsing resume:", error);
     return NextResponse.json(

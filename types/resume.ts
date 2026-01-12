@@ -1,7 +1,12 @@
+export interface ResumeLink {
+  url: string;
+  displayName: string; // If empty, shows full URL
+}
+
 export interface ResumeContact {
   email: string;
   phone: string;
-  links: string[];
+  links: ResumeLink[];
 }
 
 export interface ResumeBasics {

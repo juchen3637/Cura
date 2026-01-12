@@ -486,9 +486,12 @@ export default function DashboardPage() {
                     <p className="text-sm">{previewResume.resume_data.basics.location}</p>
                     <p className="text-sm">
                       {previewResume.resume_data.basics.contact.phone} | {previewResume.resume_data.basics.contact.email}
-                      {previewResume.resume_data.basics.contact.links.map((link: string, idx: number) => (
-                        <span key={idx}> | {link}</span>
-                      ))}
+                      {previewResume.resume_data.basics.contact.links.map((link: any, idx: number) => {
+                        // Handle both old string format and new object format
+                        const linkUrl = typeof link === 'string' ? link : link?.url || '';
+                        const displayName = typeof link === 'string' ? link : (link?.displayName || link?.url || '');
+                        return <span key={idx}> | {displayName}</span>;
+                      })}
                     </p>
                   </div>
 

@@ -205,7 +205,7 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
         ...prev.basics,
         contact: {
           ...prev.basics.contact,
-          links: [...prev.basics.contact.links, ""],
+          links: [...prev.basics.contact.links, { url: "", displayName: "" }],
         },
       },
     }));
@@ -270,21 +270,32 @@ export default function ResumeForm({ activeSection }: ResumeFormProps) {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Links</label>
+              <p className="text-xs text-gray-500 mb-2">
+                Leave display name blank to show the full URL
+              </p>
               {resume.basics.contact.links.map((_, idx) => (
-                <div key={idx} className="flex gap-2 mb-2">
+                <div key={idx} className="mb-3 p-3 border rounded bg-gray-50 dark:bg-gray-800">
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      {...register(`basics.contact.links.${idx}.url`)}
+                      onBlur={handleBlur}
+                      className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                      placeholder="https://linkedin.com/in/johndoe"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeLink(idx)}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    >
+                      Remove
+                    </button>
+                  </div>
                   <input
-                    {...register(`basics.contact.links.${idx}`)}
+                    {...register(`basics.contact.links.${idx}.displayName`)}
                     onBlur={handleBlur}
-                    className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    placeholder="https://linkedin.com/in/johndoe"
+                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                    placeholder="Display name (e.g., LinkedIn, GitHub, Portfolio)"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeLink(idx)}
-                    className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
-                  >
-                    Remove
-                  </button>
                 </div>
               ))}
               <button

@@ -1,15 +1,18 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import {
+  completeWithDocument,
+  complete,
+  getActiveProvider,
+  isProviderConfigured,
+  parseJSONResponse,
+  AIProvider,
+} from "@/lib/aiProvider";
 
 export const runtime = "edge";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
-
 export async function POST(req: Request) {
   try {
-    const { resume, coverLetter, jobDescription } = await req.json();
+    const { resume, coverLetter, jobDescription, provider: requestedProvider } = await req.json();
 
     if (!jobDescription) {
       return NextResponse.json(
@@ -25,20 +28,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Build the message content
-    const messageContent: Array<any> = [];
+    // Determine which provider to use
+    const provider: AIProvider = requestedProvider || getActiveProvider();
 
-    // Add resume - either as PDF document or as text content
-    if (resume.base64Data) {
-      // PDF format
-      messageContent.push({
-        type: "document",
-        source: {
-          type: "base64",
-          media_type: resume.mediaType,
-          data: resume.base64Data,
-        },
-      });
+    if (!isProviderConfigured(provider)) {
+      const envVar = provider === "anthropic" ? "ANTHROPIC_API_KEY" : "GOOGLE_AI_API_KEY";
+      return NextResponse.json(
+        { error: `AI provider "${provider}" is not configured. Please set ${envVar}.` },
+        { status: 503 }
+      );
     }
 
     // Parse resume content if it's JSON to get skill categories
@@ -53,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     // Build the analysis prompt
-    let prompt = `You are an expert career counselor and resume consultant.
+    const prompt = `You are an expert career counselor, resume consultant, and ATS optimization specialist.
 
 ${resume.base64Data ? "I have uploaded a resume PDF." : "I have provided resume content."}
 ${!resume.base64Data && resume.content ? `\n\nRESUME CONTENT:\n${resume.content}\n` : ""}
@@ -63,24 +61,40 @@ ${skillCategories.length > 0 ? `\nCURRENT SKILL CATEGORIES:\n${skillCategories.m
 JOB DESCRIPTION:
 ${jobDescription}
 
-Please analyze the resume against this job description and provide SPECIFIC, ACTIONABLE text changes.
+Please perform a comprehensive analysis of the resume against this job description.
 
-For each suggestion, you must provide:
-1. The EXACT current text that should be changed (word-for-word from the resume)
-2. The EXACT suggested replacement text
-3. The section/location where this change should be made
-4. A brief reason for the change
+## STEP 1: KEYWORD EXTRACTION
+First, extract all important keywords from the job description including:
+- Technical skills, tools, and technologies
+- Soft skills and competencies
+- Industry-specific terminology
+- Required qualifications and certifications
+- Action verbs and power words used
 
-Focus on:
-- Bullet points that could be more impactful or relevant
-- Missing keywords for ATS optimization
-- Metrics that could be added or improved
-- Skills or experiences that should be emphasized differently
+## STEP 2: KEYWORD MATCHING
+Compare the extracted keywords against the resume and identify:
+- Keywords that ARE present in the resume (matched)
+- Keywords that are MISSING from the resume (missing)
+- Calculate an overall match percentage
+
+## STEP 3: ACTIONABLE IMPROVEMENTS
+For each suggestion, focus on:
+1. INCORPORATING MISSING KEYWORDS naturally into existing bullet points
+2. Making bullet points more impactful, measurable, and action-oriented
+3. Adding metrics and quantifiable achievements where possible
+4. Optimizing for ATS parsing and keyword matching
 
 Format your response as JSON with this EXACT structure:
 {
-  "overallFit": "2-3 sentence assessment",
-  "keyRequirements": ["requirement 1", "requirement 2", ...],
+  "matchScore": 75,
+  "overallFit": "2-3 sentence assessment of how well the resume matches the job",
+  "keywordAnalysis": {
+    "matched": ["keyword1", "keyword2", "..."],
+    "missing": ["keyword3", "keyword4", "..."],
+    "totalJobKeywords": 25,
+    "matchedCount": 18
+  },
+  "keyRequirements": ["requirement 1", "requirement 2", "..."],
   "changes": [
     {
       "section": "experience" | "project" | "summary" | "skills",
@@ -88,58 +102,52 @@ Format your response as JSON with this EXACT structure:
       "field": "bullets" | "summary" | "role" | "skills",
       "bulletIndex": 0,
       "currentText": "exact current text from resume",
-      "suggestedText": "exact suggested replacement",
-      "categoryName": "only for skills - which category (e.g., 'Developer Tools', 'Frameworks')",
-      "reason": "why this change improves the resume"
+      "suggestedText": "improved text with keywords incorporated",
+      "categoryName": "only for skills - which category",
+      "keywordsAdded": ["keyword1", "keyword2"],
+      "reason": "why this change improves the resume and which keywords it adds"
     }
   ]
 }
 
 CRITICAL INSTRUCTIONS:
+- matchScore should be a number 0-100 representing overall resume-job fit
 - For currentText, use the EXACT text from the resume word-for-word
 - For bullet points, provide the complete bullet text
+- In suggestedText, NATURALLY incorporate missing keywords - don't just add them awkwardly
+- Focus on making suggestions that add the most high-value missing keywords
 - For SKILLS changes:
-  * Use sectionIndex to indicate which skill category (0, 1, 2, etc. from the list above)
+  * Use sectionIndex to indicate which skill category (0, 1, 2, etc.)
   * Use bulletIndex to indicate which skill in that category's array
-  * For REPLACING a skill: provide exact currentText matching the skill name
   * For ADDING a new skill: use currentText="" and provide the new skill in suggestedText
-  * IMPORTANT: Match the skill to the most appropriate existing category. For example:
-    - Programming languages → "Languages" or "Programming Languages" category
-    - Frameworks/libraries → "Frameworks" or "Frameworks and Libraries" category
-    - Tools/platforms → "Developer Tools" or "Tools" category
-  * If suggesting "Microsoft 365", "Power Platform", etc., add them to the Tools/Developer Tools category
-- Return 5-10 specific text changes with exact before/after text.`;
+  * Match skills to the most appropriate existing category
+- Return 8-12 specific text changes, prioritizing those that incorporate the most important missing keywords
+- Each change should add at least 1-2 relevant keywords while improving readability`;
 
-    // Add the text prompt
-    messageContent.push({
-      type: "text",
-      text: prompt,
-    });
+    let responseText: string;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      messages: [
-        {
-          role: "user",
-          content: messageContent,
-        },
-      ],
-    });
+    // If resume has PDF data, use document completion
+    if (resume.base64Data) {
+      const result = await completeWithDocument(
+        prompt,
+        { data: resume.base64Data, mediaType: resume.mediaType },
+        { provider, maxTokens: 4000 }
+      );
+      responseText = result.text;
+    } else {
+      // Text-only completion
+      responseText = await complete(prompt, {
+        provider,
+        maxTokens: 4000,
+      });
+    }
 
-    const responseText = message.content[0].type === "text"
-      ? message.content[0].text
-      : "";
-
-    // Parse the JSON response from Claude
+    // Parse the JSON response
     let analysis;
     try {
-      // Try to extract JSON if it's wrapped in markdown code blocks
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      const jsonString = jsonMatch ? jsonMatch[1] : responseText;
-      analysis = JSON.parse(jsonString);
+      analysis = parseJSONResponse(responseText);
     } catch (parseError) {
-      console.error("Failed to parse Claude response:", parseError);
+      console.error("Failed to parse AI response:", parseError);
       return NextResponse.json(
         { error: "Failed to parse AI response" },
         { status: 500 }
@@ -148,9 +156,17 @@ CRITICAL INSTRUCTIONS:
 
     // Ensure all expected fields exist
     const result = {
+      matchScore: analysis.matchScore || 0,
       overallFit: analysis.overallFit || "",
+      keywordAnalysis: analysis.keywordAnalysis || {
+        matched: [],
+        missing: [],
+        totalJobKeywords: 0,
+        matchedCount: 0,
+      },
       keyRequirements: analysis.keyRequirements || [],
       changes: analysis.changes || [],
+      provider, // Include which provider was used
     };
 
     return NextResponse.json(result);

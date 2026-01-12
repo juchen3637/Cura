@@ -13,10 +13,16 @@ export default function AIWorkspace() {
   const [mode, setMode] = useState<"analyze" | "build">("build");
   const [queueOpen, setQueueOpen] = useState(false);
   const router = useRouter();
-  const { setResume, setInlineSuggestions, setShowSuggestions } = useResumeStore();
+  const { setResume, setInlineSuggestions, setShowSuggestions, setCurrentTaskMeta } = useResumeStore();
   const { tasks, addTask, clearCompleted, removeTask } = useAITaskQueue();
 
   const handleViewResult = (task: any) => {
+    // Store task metadata for auto-naming when saving
+    setCurrentTaskMeta({
+      jobTitle: task.job_title || "",
+      company: task.company || "",
+    });
+
     if (task.mode === "build" && task.result) {
       // Load curated resume into editor
       console.log("Loading resume from completed task:", task.result.resume);
@@ -28,12 +34,17 @@ export default function AIWorkspace() {
         router.push("/resume-editor");
       }, 100);
     } else if (task.mode === "analyze" && task.result) {
-      // Load suggestions into editor
+      // Load suggestions into editor first
       if (task.result.changes && task.result.changes.length > 0) {
         const inlineSuggestions = task.result.changes.map((change: any, index: number) => {
           let normalizedSection = change.section.toLowerCase();
           if (normalizedSection === "projects") normalizedSection = "project";
           if (normalizedSection === "experiences") normalizedSection = "experience";
+
+          // Include keywords added info in the reasoning
+          const keywordsInfo = change.keywordsAdded?.length > 0 
+            ? ` (Keywords: ${change.keywordsAdded.join(", ")})`
+            : "";
 
           return {
             id: `change-${index}-${Date.now()}`,
@@ -45,8 +56,9 @@ export default function AIWorkspace() {
             originalText: change.currentText?.trim(),
             suggestedText: change.suggestedText?.trim(),
             title: `${normalizedSection.charAt(0).toUpperCase() + normalizedSection.slice(1)} - ${change.field}`,
-            description: change.reason,
-            reasoning: change.reason,
+            description: change.reason + keywordsInfo,
+            reasoning: change.reason + keywordsInfo,
+            keywordsAdded: change.keywordsAdded || [],
             status: "pending" as const,
             highlightColor: "blue" as const,
           };
@@ -56,9 +68,46 @@ export default function AIWorkspace() {
         setShowSuggestions(true);
       }
 
-      setTimeout(() => {
-        router.push("/resume-editor");
-      }, 100);
+      // Load the original resume that was analyzed and then navigate
+      const loadResumeAndNavigate = async () => {
+        if (task.resume_data) {
+          // If resume_data has content (JSON string from saved resume), parse and load it
+          if (task.resume_data.content) {
+            try {
+              const resumeContent = JSON.parse(task.resume_data.content);
+              console.log("Loading resume from task content:", resumeContent);
+              setResume(resumeContent);
+            } catch (e) {
+              console.error("Failed to parse resume content:", e);
+            }
+          } else if (task.resume_data.base64Data) {
+            // For PDFs, we need to re-parse the document
+            console.log("Resume was a PDF - attempting to re-parse");
+            try {
+              const res = await fetch("/api/parse-resume", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  pdfData: task.resume_data.base64Data,
+                  mediaType: task.resume_data.mediaType || "application/pdf",
+                }),
+              });
+              const parsedResume = await res.json();
+              console.log("Re-parsed PDF resume:", parsedResume);
+              setResume(parsedResume);
+            } catch (e) {
+              console.error("Failed to re-parse PDF:", e);
+            }
+          }
+        }
+
+        // Navigate after resume is loaded
+        setTimeout(() => {
+          router.push("/resume-editor");
+        }, 100);
+      };
+
+      loadResumeAndNavigate();
     }
   };
 

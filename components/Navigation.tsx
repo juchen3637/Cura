@@ -49,6 +49,7 @@ export default function Navigation() {
   // Only show additional pages if logged in (not guest)
   if (user) {
     navItems.splice(1, 0, { href: "/dashboard", label: "My Resumes" });
+    navItems.push({ href: "/cover-letter", label: "Cover Letter" });
     navItems.push({ href: "/ai-workspace", label: "AI Workspace" });
 
     // Add admin dashboard for admins only

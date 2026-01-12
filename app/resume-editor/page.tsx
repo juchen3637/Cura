@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useResumes } from "@/lib/hooks/useResumes";
 import { useResumeStore } from "@/store/resumeStore";
@@ -16,8 +17,9 @@ function ResumeEditorContent() {
   const { toast, hideToast, success, error: showError, warning } = useToast();
   const searchParams = useSearchParams();
   const resumeIdFromUrl = searchParams.get("resumeId");
+  const queryClient = useQueryClient();
 
-  const { resume, setResume, inlineSuggestions } = useResumeStore();
+  const { resume, setResume, inlineSuggestions, currentTaskMeta, setCurrentTaskMeta, clearSuggestions } = useResumeStore();
   const [activeSection, setActiveSection] = useState("basics");
   const [user, setUser] = useState<any>(null);
   const [currentResumeId, setCurrentResumeId] = useState<string | null>(resumeIdFromUrl);
@@ -27,11 +29,52 @@ function ResumeEditorContent() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mountTimeRef = useRef<number>(Date.now());
+  const hasNavigatedAwayRef = useRef(false);
 
   // Wait for Zustand persist to hydrate
   useEffect(() => {
     setIsHydrated(true);
+    mountTimeRef.current = Date.now();
   }, []);
+
+  // Track when user navigates away (for clearing on actual navigation, not strict mode)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      hasNavigatedAwayRef.current = true;
+    };
+
+    // Listen for navigation events
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      
+      // Only clear if we've been mounted for more than 500ms (not a strict mode remount)
+      // and if there's no resumeId in URL (not editing a saved resume)
+      const timeMounted = Date.now() - mountTimeRef.current;
+      if (timeMounted > 500) {
+        // Reset to blank resume when navigating away from the editor
+        const blankResume = {
+          version: "1.0",
+          basics: {
+            name: "",
+            title: "",
+            location: "",
+            contact: { email: "", phone: "", links: [] },
+            summary: "",
+          },
+          experience: [],
+          education: [],
+          skills: [],
+          projects: [],
+        };
+        setResume(blankResume);
+        setCurrentTaskMeta(null);
+        clearSuggestions();
+      }
+    };
+  }, [setResume, setCurrentTaskMeta, clearSuggestions]);
 
   // Debug: log resume data when it changes
   useEffect(() => {
@@ -72,11 +115,13 @@ function ResumeEditorContent() {
       const resumeToLoad = savedResumes.find((r: any) => r.id === resumeIdFromUrl);
       if (resumeToLoad) {
         setResume(resumeToLoad.resume_data);
-        setOriginalResume(resumeToLoad.resume_data);
+        // Get the normalized version from the store after setting
+        const normalizedResume = useResumeStore.getState().resume;
+        setOriginalResume(normalizedResume);
         setCurrentResumeId(resumeToLoad.id);
       }
     }
-  }, [resumeIdFromUrl, savedResumes]);
+  }, [resumeIdFromUrl, savedResumes, setResume]);
 
   const sections = [
     { id: "basics", label: "Basic Info" },
@@ -87,7 +132,32 @@ function ResumeEditorContent() {
   ];
 
   const handleExportPdf = () => {
-    exportToPdf();
+    // Format: FirstName_LastName_Resume_JobTitle.pdf
+    const nameParts = (resume.basics.name || "").trim().split(/\s+/);
+    const firstName = nameParts[0] || "First";
+    const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "Last";
+    
+    // Get job title from task metadata or saved resume title
+    let jobTitle = "";
+    if (currentTaskMeta?.jobTitle) {
+      jobTitle = currentTaskMeta.jobTitle;
+    } else if (currentResumeId && savedResumes) {
+      const currentResume = savedResumes.find((r: any) => r.id === currentResumeId);
+      if (currentResume?.title) {
+        // Extract job title from saved resume title (might be "Job Title (Company)")
+        jobTitle = currentResume.title.replace(/\s*\([^)]*\)\s*$/, "").trim();
+      }
+    }
+    
+    // Build filename with underscores, sanitize for file system
+    const sanitize = (str: string) => str.replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
+    
+    let pdfFilename = `${sanitize(firstName)}_${sanitize(lastName)}_Resume`;
+    if (jobTitle) {
+      pdfFilename += `_${sanitize(jobTitle)}`;
+    }
+    
+    exportToPdf(pdfFilename);
   };
 
   const handleImportPdf = () => {
@@ -177,7 +247,8 @@ function ResumeEditorContent() {
       }
 
       setResume(parsedResume);
-      setOriginalResume(parsedResume);
+      // Get the normalized version from the store
+      setOriginalResume(useResumeStore.getState().resume);
     } catch (error) {
       console.error("Import error:", error);
       showError("Failed to import resume from PDF. Please try again.");
@@ -217,7 +288,8 @@ function ResumeEditorContent() {
       const selectedResume = savedResumes.find((r: any) => r.id === value);
       if (selectedResume) {
         setResume(selectedResume.resume_data);
-        setOriginalResume(selectedResume.resume_data);
+        // Get the normalized version from the store
+        setOriginalResume(useResumeStore.getState().resume);
         setCurrentResumeId(selectedResume.id);
       }
     }
@@ -229,12 +301,20 @@ function ResumeEditorContent() {
       return;
     }
 
-    // Pre-fill with current resume title if editing, otherwise use person's name
+    // Pre-fill with current resume title if editing, otherwise use task metadata or person's name
     let defaultTitle = "My Resume";
 
     if (currentResumeId && savedResumes) {
       const currentResume = savedResumes.find((r: any) => r.id === currentResumeId);
       defaultTitle = currentResume?.title || resume.basics.name || "My Resume";
+    } else if (currentTaskMeta && currentTaskMeta.jobTitle) {
+      // Use "Job Title (Company)" format from AI task
+      const company = currentTaskMeta.company && currentTaskMeta.company !== "No Company" 
+        ? currentTaskMeta.company 
+        : null;
+      defaultTitle = company 
+        ? `${currentTaskMeta.jobTitle} (${company})`
+        : currentTaskMeta.jobTitle;
     } else {
       defaultTitle = resume.basics.name || "My Resume";
     }
@@ -280,6 +360,8 @@ function ResumeEditorContent() {
         if (!response.ok) throw new Error("Failed to update resume");
         setOriginalResume(resume);
         setShowSaveDialog(false);
+        // Invalidate the cache so the list refreshes
+        queryClient.invalidateQueries({ queryKey: ["resumes"] });
         success("Resume updated successfully!");
       } else {
         // Create new
@@ -299,6 +381,8 @@ function ResumeEditorContent() {
         setCurrentResumeId(savedResume.id);
         setOriginalResume(resume);
         setShowSaveDialog(false);
+        // Invalidate the cache so the list refreshes
+        queryClient.invalidateQueries({ queryKey: ["resumes"] });
         success("Resume saved successfully!");
       }
     } catch (error) {

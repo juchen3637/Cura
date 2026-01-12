@@ -186,8 +186,38 @@ export default function TaskQueueSidePanel({
                     </div>
                   </div>
 
-                  {/* Status Row */}
+                  {/* Match Score (for completed analyze tasks) */}
+                  {task.status === "completed" && task.mode === "analyze" && task.result?.matchScore !== undefined && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-600 dark:text-gray-400">Match Score</span>
+                        <span className={`text-sm font-bold ${
+                          task.result.matchScore >= 80 ? "text-green-600 dark:text-green-400" :
+                          task.result.matchScore >= 60 ? "text-yellow-600 dark:text-yellow-400" :
+                          "text-red-600 dark:text-red-400"
+                        }`}>
+                          {task.result.matchScore}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${
+                            task.result.matchScore >= 80 ? "bg-green-500" :
+                            task.result.matchScore >= 60 ? "bg-yellow-500" :
+                            "bg-red-500"
+                          }`}
+                          style={{ width: `${task.result.matchScore}%` }}
+                        />
+                      </div>
+                      {task.result.keywordAnalysis && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {task.result.keywordAnalysis.matchedCount}/{task.result.keywordAnalysis.totalJobKeywords} keywords matched
+                        </p>
+                      )}
+                    </div>
+                  )}
 
+                  {/* Status Row */}
                   <div className="flex items-center gap-2 text-sm">
                     {task.status === "running" && (
                       <div className="flex items-center text-blue-700 dark:text-blue-400">

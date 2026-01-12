@@ -188,9 +188,11 @@ export default function ResumeDiffPreview() {
           <p className="text-sm">{resume.basics.location}</p>
           <p className="text-sm">
             {resume.basics.contact.phone} | {resume.basics.contact.email}
-            {resume.basics.contact.links.map((link, idx) => (
-              <span key={idx}> | {link}</span>
-            ))}
+            {resume.basics.contact.links.map((link, idx) => {
+              // Handle both old string format and new object format
+              const displayName = typeof link === 'string' ? link : (link?.displayName || link?.url || '');
+              return <span key={idx}> | {displayName}</span>;
+            })}
           </p>
         </div>
 
