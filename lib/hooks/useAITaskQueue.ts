@@ -4,6 +4,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 export type AITaskMode = "analyze" | "build";
 export type AITaskStatus = "pending" | "running" | "completed" | "failed";
 
+export interface BuildPreferences {
+  maxExperiences?: number;
+  maxProjects?: number;
+  maxBulletsPerExperience?: number;
+  maxBulletsPerProject?: number;
+}
+
 export interface AITask {
   id: string;
   mode: AITaskMode;
@@ -11,6 +18,7 @@ export interface AITask {
   company: string;
   job_description: string;
   resume_data?: any;
+  preferences?: BuildPreferences;
   status: AITaskStatus;
   result?: any;
   error?: string | null;
@@ -61,6 +69,7 @@ export function useAITaskQueue() {
       company: string;
       job_description: string;
       resume_data?: any;
+      preferences?: BuildPreferences;
     }) => {
       const response = await fetch("/api/ai-tasks", {
         method: "POST",
@@ -119,7 +128,8 @@ export function useAITaskQueue() {
       jobTitle?: string,
       company?: string,
       resumeData?: string,
-      onComplete?: (result: any) => void
+      onComplete?: (result: any) => void,
+      preferences?: BuildPreferences
     ) => {
       if (!dbAvailable) {
         throw new Error("Database not available. Please run the migration first.");
@@ -149,6 +159,7 @@ export function useAITaskQueue() {
         company: displayCompany,
         job_description: jobDescription,
         resume_data: resumeData ? JSON.parse(resumeData) : null,
+        preferences: preferences || undefined,
       };
 
       const newTask = await createTaskMutation.mutateAsync(taskData);
@@ -233,8 +244,10 @@ export function useAITaskQueue() {
             body: JSON.stringify({
               jobDescription: task.job_description,
               preferences: {
-                maxExperiences: 3,
-                maxProjects: 2,
+                maxExperiences: task.preferences?.maxExperiences || 3,
+                maxProjects: task.preferences?.maxProjects || 2,
+                maxBulletsPerExperience: task.preferences?.maxBulletsPerExperience || 3,
+                maxBulletsPerProject: task.preferences?.maxBulletsPerProject || 3,
               },
             }),
           });

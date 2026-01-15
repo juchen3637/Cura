@@ -10,7 +10,10 @@
       "mcp__serena__read_memory",
       "mcp__serena__think_about_collected_information",
       "Bash(npm run build:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "mcp__serena__find_symbol",
+      "mcp__serena__find_file",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

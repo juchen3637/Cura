@@ -83,8 +83,8 @@ ${idx + 1}. ID: ${exp.id}
    ${exp.role} at ${exp.company}
    Location: ${exp.location || "N/A"}
    Duration: ${exp.start_date} to ${exp.end_date || "Present"}
-   Bullets:
-   ${exp.bullets.map((b: string) => `   • ${b}`).join("\n")}
+   Bullets (${exp.bullets.length} total):
+   ${exp.bullets.map((b: string, bIdx: number) => `   [${bIdx}] • ${b}`).join("\n")}
 `).join("\n")}
 
 EDUCATION (${education.length} total):
@@ -101,8 +101,8 @@ ${projects.map((proj, idx) => `
 ${idx + 1}. ID: ${proj.id}
    ${proj.name}
    Link: ${proj.link || "N/A"}
-   Description:
-   ${proj.bullets.map((b: string) => `   • ${b}`).join("\n")}
+   Bullets (${proj.bullets.length} total):
+   ${proj.bullets.map((b: string, bIdx: number) => `   [${bIdx}] • ${b}`).join("\n")}
 `).join("\n")}
 
 SKILLS:
@@ -125,11 +125,15 @@ Consider:
 
 Selection Guidelines:
 - Select ${preferences?.maxExperiences || 3} most relevant work experiences
+- For each selected experience, select the TOP ${preferences?.maxBulletsPerExperience || 3} most relevant bullet points (by index) that best match the job requirements
 - Include all education entries unless clearly irrelevant
 - Select ${preferences?.maxProjects || 2} most impressive/relevant projects
+- For each selected project, select the TOP ${preferences?.maxBulletsPerProject || 3} most relevant bullet points (by index) that best match the job requirements
 - Choose skill categories that match the job requirements
 
-For each selected experience and project, you may tailor the bullet points to better highlight job-relevant achievements. Keep the core facts but emphasize relevant aspects.
+IMPORTANT: For each selected experience and project, you MUST specify which bullet indices to include using "selectedBulletIndices". Choose the bullets that best demonstrate relevant skills and achievements for the job.
+
+For each selected bullet, you may tailor it to better highlight job-relevant achievements. Keep the core facts but emphasize relevant aspects.
 
 Return a JSON response with this EXACT structure:
 {
@@ -140,17 +144,21 @@ Return a JSON response with this EXACT structure:
   "tailoredContent": {
     "experiences": {
       "experience_id_1": {
-        "bullets": ["tailored bullet 1", "tailored bullet 2", ...]
+        "selectedBulletIndices": [0, 2, 4],
+        "bullets": ["tailored version of bullet 0", "tailored version of bullet 2", "tailored version of bullet 4"]
       }
     },
     "projects": {
       "project_id_1": {
-        "bullets": ["tailored bullet 1", ...]
+        "selectedBulletIndices": [0, 1],
+        "bullets": ["tailored version of bullet 0", "tailored version of bullet 1"]
       }
     }
   },
   "reasoning": "2-3 sentences explaining why these items were selected and how they match the job requirements"
 }
+
+NOTE: The "selectedBulletIndices" array contains the indices of the bullets you selected (from the [index] shown in the profile data). The "bullets" array should contain tailored versions of those selected bullets IN THE SAME ORDER as selectedBulletIndices.
 
 CRITICAL INSTRUCTIONS:
 - Use the EXACT UUID IDs (the long strings like "550e8400-e29b-41d4-a716-446655440000") from the "ID:" fields in the profile data above
@@ -200,21 +208,48 @@ CRITICAL INSTRUCTIONS:
       skills: selectedSkillsData.length,
     });
 
-    // Build experiences with ORIGINAL bullets (not tailored)
-    const finalExperiences = selectedExpData.map((exp) => ({
-      company: exp.company,
-      role: exp.role,
-      location: exp.location || "",
-      start: exp.start_date,
-      end: exp.end_date || "Present",
-      bullets: exp.bullets, // Use original bullets
-    }));
+    // Build experiences with SELECTED bullets (limited by preferences)
+    const maxBulletsPerExperience = preferences?.maxBulletsPerExperience || 3;
+    const maxBulletsPerProject = preferences?.maxBulletsPerProject || 3;
 
-    const finalProjects = selectedProjData.map((proj) => ({
-      name: proj.name,
-      link: proj.link || "",
-      bullets: proj.bullets, // Use original bullets
-    }));
+    const finalExperiences = selectedExpData.map((exp) => {
+      const tailored = selection.tailoredContent?.experiences?.[exp.id];
+      // Get selected bullet indices, fallback to first N bullets if not provided
+      const selectedIndices = tailored?.selectedBulletIndices ||
+        exp.bullets.slice(0, maxBulletsPerExperience).map((_: string, i: number) => i);
+      // Get only the selected bullets (original versions)
+      const selectedBullets = selectedIndices
+        .slice(0, maxBulletsPerExperience)
+        .map((idx: number) => exp.bullets[idx])
+        .filter(Boolean);
+
+      return {
+        company: exp.company,
+        role: exp.role,
+        location: exp.location || "",
+        start: exp.start_date,
+        end: exp.end_date || "Present",
+        bullets: selectedBullets,
+      };
+    });
+
+    const finalProjects = selectedProjData.map((proj) => {
+      const tailored = selection.tailoredContent?.projects?.[proj.id];
+      // Get selected bullet indices, fallback to first N bullets if not provided
+      const selectedIndices = tailored?.selectedBulletIndices ||
+        proj.bullets.slice(0, maxBulletsPerProject).map((_: string, i: number) => i);
+      // Get only the selected bullets (original versions)
+      const selectedBullets = selectedIndices
+        .slice(0, maxBulletsPerProject)
+        .map((idx: number) => proj.bullets[idx])
+        .filter(Boolean);
+
+      return {
+        name: proj.name,
+        link: proj.link || "",
+        bullets: selectedBullets,
+      };
+    });
 
     const finalEducation = selectedEduData.map((edu) => ({
       institution: edu.institution,
@@ -250,23 +285,26 @@ CRITICAL INSTRUCTIONS:
       projects: finalProjects,
     };
 
-    // Generate inline suggestions from tailored content
+    // Generate inline suggestions from tailored content (only for selected bullets)
     const inlineSuggestions: any[] = [];
 
     // Experience bullet suggestions
     selectedExpData.forEach((exp, expIndex) => {
       const tailored = selection.tailoredContent?.experiences?.[exp.id];
-      if (tailored?.bullets) {
-        tailored.bullets.forEach((suggestedBullet: string, bulletIndex: number) => {
-          const originalBullet = exp.bullets[bulletIndex];
-          if (originalBullet !== suggestedBullet) {
+      if (tailored?.selectedBulletIndices && tailored?.bullets) {
+        // Iterate over selected bullet indices
+        tailored.selectedBulletIndices.forEach((originalIdx: number, newIdx: number) => {
+          const originalBullet = exp.bullets[originalIdx];
+          const suggestedBullet = tailored.bullets[newIdx];
+          // Only create suggestion if both exist and are different
+          if (originalBullet && suggestedBullet && originalBullet !== suggestedBullet) {
             inlineSuggestions.push({
-              id: `exp-${expIndex}-bullet-${bulletIndex}-${Date.now()}`,
+              id: `exp-${expIndex}-bullet-${newIdx}-${Date.now()}`,
               type: "modify",
               section: "experience",
               sectionIndex: expIndex,
               field: "bullets",
-              bulletIndex: bulletIndex,
+              bulletIndex: newIdx, // Use new index (position in final resume)
               originalText: originalBullet,
               suggestedText: suggestedBullet,
               title: `Improve bullet point`,
@@ -283,17 +321,20 @@ CRITICAL INSTRUCTIONS:
     // Project bullet suggestions
     selectedProjData.forEach((proj, projIndex) => {
       const tailored = selection.tailoredContent?.projects?.[proj.id];
-      if (tailored?.bullets) {
-        tailored.bullets.forEach((suggestedBullet: string, bulletIndex: number) => {
-          const originalBullet = proj.bullets[bulletIndex];
-          if (originalBullet !== suggestedBullet) {
+      if (tailored?.selectedBulletIndices && tailored?.bullets) {
+        // Iterate over selected bullet indices
+        tailored.selectedBulletIndices.forEach((originalIdx: number, newIdx: number) => {
+          const originalBullet = proj.bullets[originalIdx];
+          const suggestedBullet = tailored.bullets[newIdx];
+          // Only create suggestion if both exist and are different
+          if (originalBullet && suggestedBullet && originalBullet !== suggestedBullet) {
             inlineSuggestions.push({
-              id: `proj-${projIndex}-bullet-${bulletIndex}-${Date.now()}`,
+              id: `proj-${projIndex}-bullet-${newIdx}-${Date.now()}`,
               type: "modify",
               section: "project",
               sectionIndex: projIndex,
               field: "bullets",
-              bulletIndex: bulletIndex,
+              bulletIndex: newIdx, // Use new index (position in final resume)
               originalText: originalBullet,
               suggestedText: suggestedBullet,
               title: `Improve project bullet`,

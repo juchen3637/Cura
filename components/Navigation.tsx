@@ -51,6 +51,7 @@ export default function Navigation() {
     navItems.splice(1, 0, { href: "/dashboard", label: "My Resumes" });
     navItems.push({ href: "/cover-letter", label: "Cover Letter" });
     navItems.push({ href: "/ai-workspace", label: "AI Workspace" });
+    navItems.push({ href: "/outreach", label: "Outreach" });
 
     // Add admin dashboard for admins only
     if (profile?.role === "admin") {
