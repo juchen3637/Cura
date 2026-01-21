@@ -1,13 +1,35 @@
 "use client";
 
+import { useState } from "react";
 import { AITask } from "@/lib/hooks/useAITaskQueue";
 
 interface TaskQueueProps {
   tasks: AITask[];
   onClearCompleted: () => void;
+  onRetryTask: (taskId: string) => void;
 }
 
-export default function TaskQueue({ tasks, onClearCompleted }: TaskQueueProps) {
+export default function TaskQueue({ tasks, onClearCompleted, onRetryTask }: TaskQueueProps) {
+  const [retryingTasks, setRetryingTasks] = useState<Set<string>>(new Set());
+
+  const handleRetry = async (taskId: string) => {
+    setRetryingTasks((prev) => new Set(prev).add(taskId));
+    try {
+      await onRetryTask(taskId);
+    } catch (error) {
+      console.error("Failed to retry task:", error);
+      alert("Failed to retry task. Please try again.");
+    } finally {
+      setTimeout(() => {
+        setRetryingTasks((prev) => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
+      }, 500);
+    }
+  };
+
   if (tasks.length === 0) return null;
 
   const pendingTasks = tasks.filter((t) => t.status === "pending");
@@ -93,6 +115,30 @@ export default function TaskQueue({ tasks, onClearCompleted }: TaskQueueProps) {
                 </div>
                 {task.error && (
                   <p className="text-sm text-red-600 dark:text-red-400 mt-1">{task.error}</p>
+                )}
+                {task.status === "failed" && (
+                  <button
+                    onClick={() => handleRetry(task.id)}
+                    disabled={retryingTasks.has(task.id)}
+                    className="mt-2 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {retryingTasks.has(task.id) ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Retrying...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Retry
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
               {task.status === "completed" && task.result && (

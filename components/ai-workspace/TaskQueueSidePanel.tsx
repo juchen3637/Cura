@@ -10,6 +10,7 @@ interface TaskQueueSidePanelProps {
   onToggle: () => void;
   onClearCompleted: () => void;
   onDeleteTask: (taskId: string) => void;
+  onRetryTask: (taskId: string) => void;
 }
 
 export default function TaskQueueSidePanel({
@@ -18,6 +19,7 @@ export default function TaskQueueSidePanel({
   onToggle,
   onClearCompleted,
   onDeleteTask,
+  onRetryTask,
 }: TaskQueueSidePanelProps) {
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -30,6 +32,26 @@ export default function TaskQueueSidePanel({
     message: "",
     onConfirm: () => {},
   });
+
+  const [retryingTasks, setRetryingTasks] = useState<Set<string>>(new Set());
+
+  const handleRetry = async (taskId: string) => {
+    setRetryingTasks((prev) => new Set(prev).add(taskId));
+    try {
+      await onRetryTask(taskId);
+    } catch (error) {
+      console.error("Failed to retry task:", error);
+      alert("Failed to retry task. Please try again.");
+    } finally {
+      setTimeout(() => {
+        setRetryingTasks((prev) => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
+      }, 500);
+    }
+  };
 
   const pendingTasks = tasks.filter((t) => t.status === "pending");
   const runningTasks = tasks.filter((t) => t.status === "running");
@@ -255,7 +277,33 @@ export default function TaskQueueSidePanel({
                       </>
                     )}
                     {task.status === "failed" && (
-                      <span className="text-red-700 dark:text-red-400 text-xs">Failed: {task.error || "Unknown error"}</span>
+                      <>
+                        <span className="text-red-700 dark:text-red-400 text-xs flex-1">
+                          Failed: {task.error || "Unknown error"}
+                        </span>
+                        <button
+                          onClick={() => handleRetry(task.id)}
+                          disabled={retryingTasks.has(task.id)}
+                          className="ml-2 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {retryingTasks.has(task.id) ? (
+                            <>
+                              <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              Retrying...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Retry
+                            </>
+                          )}
+                        </button>
+                      </>
                     )}
                     {task.status === "pending" && (
                       <span className="text-gray-500 dark:text-gray-400">Queued</span>

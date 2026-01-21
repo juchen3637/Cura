@@ -183,6 +183,27 @@ export function useAITaskQueue() {
     [deleteTaskMutation]
   );
 
+  const retryTask = useCallback(
+    async (taskId: string) => {
+      // Validate task is in failed state
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || task.status !== "failed") {
+        console.warn("Task not in failed state, cannot retry");
+        return;
+      }
+
+      // Reset to pending and clear error
+      await updateTaskMutation.mutateAsync({
+        id: taskId,
+        updates: {
+          status: "pending",
+          error: null,
+        },
+      });
+    },
+    [updateTaskMutation, tasks]
+  );
+
   // Process all pending tasks in parallel
   useEffect(() => {
     if (!dbAvailable) return;
@@ -294,5 +315,6 @@ export function useAITaskQueue() {
     addTask,
     clearCompleted,
     removeTask,
+    retryTask,
   };
 }

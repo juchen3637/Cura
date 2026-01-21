@@ -14,7 +14,7 @@ export default function AIWorkspace() {
   const [queueOpen, setQueueOpen] = useState(false);
   const router = useRouter();
   const { setResume, setInlineSuggestions, setShowSuggestions, setCurrentTaskMeta } = useResumeStore();
-  const { tasks, addTask, clearCompleted, removeTask } = useAITaskQueue();
+  const { tasks, addTask, clearCompleted, removeTask, retryTask } = useAITaskQueue();
 
   const handleViewResult = (task: any) => {
     // Store task metadata for auto-naming when saving
@@ -135,6 +135,7 @@ export default function AIWorkspace() {
         onToggle={() => setQueueOpen(!queueOpen)}
         onClearCompleted={clearCompleted}
         onDeleteTask={removeTask}
+        onRetryTask={retryTask}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
