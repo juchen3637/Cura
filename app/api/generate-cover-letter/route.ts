@@ -7,7 +7,8 @@ import {
 } from "@/lib/aiProvider";
 import { Resume } from "@/types/resume";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 interface CoverLetterRequest {
   resume: Resume;

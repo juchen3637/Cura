@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useResumeStore } from "@/store/resumeStore";
-import { useAITaskQueue } from "@/lib/hooks/useAITaskQueue";
+import { useJobContextStore } from "@/store/jobContextStore";
 
 interface CuratedResult {
   resume: any;
@@ -23,15 +21,11 @@ interface BuildPreferences {
 }
 
 interface BuildCuratedModeProps {
-  addTask: (mode: "analyze" | "build", jobDescription: string, jobTitle?: string, company?: string, resumeData?: string, onComplete?: (result: any) => void, preferences?: BuildPreferences) => Promise<string>;
+  addTask: (mode: "analyze" | "build", jobDescription: string, jobTitle?: string, company?: string, resumeData?: string, preferences?: BuildPreferences) => Promise<string>;
 }
 
 export default function BuildCuratedMode({ addTask }: BuildCuratedModeProps) {
-  const router = useRouter();
-  const { setResume, setInlineSuggestions, setShowSuggestions } = useResumeStore();
-  const [jobDescription, setJobDescription] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [company, setCompany] = useState("");
+  const { jobDescription, jobTitle, company } = useJobContextStore();
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [maxBulletsPerExperience, setMaxBulletsPerExperience] = useState(3);
@@ -47,15 +41,11 @@ export default function BuildCuratedMode({ addTask }: BuildCuratedModeProps) {
 
     try {
       // Add task to queue with preferences
-      await addTask("build", jobDescription, jobTitle, company, undefined, undefined, {
+      await addTask("build", jobDescription, jobTitle, company, undefined, {
         maxBulletsPerExperience,
         maxBulletsPerProject,
       });
 
-      // Clear form only on success
-      setJobDescription("");
-      setJobTitle("");
-      setCompany("");
     } catch (err) {
       setError(
         err instanceof Error && err.message.includes("migration")
@@ -94,66 +84,27 @@ export default function BuildCuratedMode({ addTask }: BuildCuratedModeProps) {
         </div>
       </div>
 
-      {/* Job Info Fields */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Job Title (Optional)
-          </label>
-          <input
-            type="text"
-            value={jobTitle}
-            onChange={(e) => setJobTitle(e.target.value)}
-            placeholder="e.g., Software Engineer"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Company (Optional)
-          </label>
-          <input
-            type="text"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            placeholder="e.g., Google"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Job Description Input */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center mb-4">
-          <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mr-3">
-            <svg
-              className="w-6 h-6 text-purple-600 dark:text-purple-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
+      {/* Job Context Summary */}
+      {jobDescription ? (
+        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-900 dark:text-purple-200">
+                {jobTitle ? `${jobTitle}${company ? ` at ${company}` : ""}` : "Job context loaded"}
+              </p>
+              <p className="text-xs text-purple-700 dark:text-purple-300 mt-1 line-clamp-2">
+                {jobDescription.slice(0, 120)}{jobDescription.length > 120 ? "..." : ""}
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Job Description <span className="text-red-500">*</span>
-          </h3>
         </div>
-        <textarea
-          value={jobDescription}
-          onChange={(e) => setJobDescription(e.target.value)}
-          placeholder="Paste the job description here..."
-          className="w-full h-64 px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-        />
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          The AI will analyze this and select the best items from your profile
-        </p>
-      </div>
+      ) : (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            No job description set. Go to the <strong>Job Context</strong> tab and paste a job description first.
+          </p>
+        </div>
+      )}
 
       {/* Advanced Options */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">

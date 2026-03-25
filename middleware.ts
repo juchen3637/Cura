@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const { supabaseResponse, user, supabase } = await updateSession(request);
 
   // Protected routes that require authentication
-  const protectedPaths = ["/dashboard", "/profile", "/ai-workspace", "/outreach"];
+  const protectedPaths = ["/dashboard", "/profile", "/ai-workspace", "/outreach", "/cover-letter", "/getting-started"];
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );

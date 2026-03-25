@@ -1,51 +1,79 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import ModeSelector from "@/components/ai-workspace/ModeSelector";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AnalyzeMode from "@/components/ai-workspace/AnalyzeMode";
 import BuildCuratedMode from "@/components/ai-workspace/BuildCuratedMode";
+import ModeSelector from "@/components/ai-workspace/ModeSelector";
+import OutreachPanel from "@/components/ai-workspace/OutreachPanel";
+import CoverLetterPanel from "@/components/ai-workspace/CoverLetterPanel";
+import JobContextPanel from "@/components/ai-workspace/JobContextPanel";
 import TaskQueueSidePanel from "@/components/ai-workspace/TaskQueueSidePanel";
 import { useAITaskQueue } from "@/lib/hooks/useAITaskQueue";
 import { useResumeStore } from "@/store/resumeStore";
+import { useJobContextStore } from "@/store/jobContextStore";
 
-export default function AIWorkspace() {
-  const [mode, setMode] = useState<"analyze" | "build">("build");
-  const [queueOpen, setQueueOpen] = useState(false);
+type PipelineTab = "context" | "resume" | "outreach" | "cover-letter";
+
+const TABS: { id: PipelineTab; label: string; description: string }[] = [
+  { id: "context", label: "1. Job Context", description: "Enter job details once" },
+  { id: "resume", label: "2. Resume AI", description: "Analyze or build a resume" },
+  { id: "outreach", label: "3. Outreach", description: "Draft a personalized message" },
+  { id: "cover-letter", label: "4. Cover Letter", description: "Generate a cover letter" },
+];
+
+export default function AIWorkspacePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    }>
+      <AIWorkspace />
+    </Suspense>
+  );
+}
+
+function AIWorkspace() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { setResume, setInlineSuggestions, setShowSuggestions, setCurrentTaskMeta } = useResumeStore();
+  const { jobDescription } = useJobContextStore();
   const { tasks, addTask, clearCompleted, removeTask, retryTask } = useAITaskQueue();
 
+  const [activeTab, setActiveTab] = useState<PipelineTab>(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "analyze" || tabParam === "build") return "resume";
+    if (tabParam && TABS.some((t) => t.id === tabParam)) return tabParam as PipelineTab;
+    return "resume";
+  });
+
+  const [resumeMode, setResumeMode] = useState<"analyze" | "build">(() => {
+    return searchParams.get("tab") === "build" ? "build" : "analyze";
+  });
+
+  const [queueOpen, setQueueOpen] = useState(false);
+
   const handleViewResult = (task: any) => {
-    // Store task metadata for auto-naming when saving
     setCurrentTaskMeta({
       jobTitle: task.job_title || "",
       company: task.company || "",
     });
 
     if (task.mode === "build" && task.result) {
-      // Load curated resume into editor
-      console.log("Loading resume from completed task:", task.result.resume);
       setResume(task.result.resume);
       setInlineSuggestions(task.result.inlineSuggestions || []);
       setShowSuggestions(task.result.inlineSuggestions?.length > 0);
-
-      setTimeout(() => {
-        router.push("/resume-editor");
-      }, 100);
+      setTimeout(() => router.push("/resume-editor"), 100);
     } else if (task.mode === "analyze" && task.result) {
-      // Load suggestions into editor first
       if (task.result.changes && task.result.changes.length > 0) {
         const inlineSuggestions = task.result.changes.map((change: any, index: number) => {
           let normalizedSection = change.section.toLowerCase();
           if (normalizedSection === "projects") normalizedSection = "project";
           if (normalizedSection === "experiences") normalizedSection = "experience";
-
-          // Include keywords added info in the reasoning
-          const keywordsInfo = change.keywordsAdded?.length > 0 
+          const keywordsInfo = change.keywordsAdded?.length > 0
             ? ` (Keywords: ${change.keywordsAdded.join(", ")})`
             : "";
-
           return {
             id: `change-${index}-${Date.now()}`,
             type: "modify" as const,
@@ -63,26 +91,19 @@ export default function AIWorkspace() {
             highlightColor: "blue" as const,
           };
         });
-
         setInlineSuggestions(inlineSuggestions);
         setShowSuggestions(true);
       }
 
-      // Load the original resume that was analyzed and then navigate
       const loadResumeAndNavigate = async () => {
         if (task.resume_data) {
-          // If resume_data has content (JSON string from saved resume), parse and load it
           if (task.resume_data.content) {
             try {
-              const resumeContent = JSON.parse(task.resume_data.content);
-              console.log("Loading resume from task content:", resumeContent);
-              setResume(resumeContent);
+              setResume(JSON.parse(task.resume_data.content));
             } catch (e) {
               console.error("Failed to parse resume content:", e);
             }
           } else if (task.resume_data.base64Data) {
-            // For PDFs, we need to re-parse the document
-            console.log("Resume was a PDF - attempting to re-parse");
             try {
               const res = await fetch("/api/parse-resume", {
                 method: "POST",
@@ -92,38 +113,34 @@ export default function AIWorkspace() {
                   mediaType: task.resume_data.mediaType || "application/pdf",
                 }),
               });
-              const parsedResume = await res.json();
-              console.log("Re-parsed PDF resume:", parsedResume);
-              setResume(parsedResume);
+              if (!res.ok) throw new Error(`Parse failed: ${res.status}`);
+              setResume(await res.json());
             } catch (e) {
               console.error("Failed to re-parse PDF:", e);
             }
           }
         }
-
-        // Navigate after resume is loaded
-        setTimeout(() => {
-          router.push("/resume-editor");
-        }, 100);
+        setTimeout(() => router.push("/resume-editor"), 100);
       };
 
       loadResumeAndNavigate();
     }
   };
 
-  // Add onComplete handlers to tasks
   const enhancedAddTask = async (
     mode: "analyze" | "build",
-    jobDescription: string,
+    jobDesc: string,
     jobTitle?: string,
     company?: string,
-    resumeData?: string
+    resumeData?: string,
+    preferences?: { maxBulletsPerExperience?: number; maxBulletsPerProject?: number }
   ) => {
-    const taskId = await addTask(mode, jobDescription, jobTitle, company, resumeData, (result) => {
-      // Task completed - result is available in the queue for user to view
-      console.log(`Task completed: ${mode}`, result);
-    });
-    return taskId;
+    return addTask(mode, jobDesc, jobTitle, company, resumeData, undefined, preferences);
+  };
+
+  const handleTabChange = (tab: PipelineTab) => {
+    setActiveTab(tab);
+    router.replace(`/ai-workspace?tab=${tab}`, { scroll: false });
   };
 
   return (
@@ -140,74 +157,72 @@ export default function AIWorkspace() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Choose how you want to work with AI to optimize your job application
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Pipeline</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Enter the job once — optimize your resume, draft outreach, and generate a cover letter.
           </p>
-
-          {/* Mode Selector */}
-          <ModeSelector mode={mode} onChange={setMode} />
         </div>
 
-        {/* Mode Description */}
+        {/* Pipeline Tabs */}
         <div className="mb-8">
-          {mode === "analyze" ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5 mr-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <div>
-                  <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                    Analyze Existing Resume
-                  </h3>
-                  <p className="text-sm text-blue-800">
-                    Upload your current resume and job description. The AI will analyze how
-                    well they match and suggest specific improvements to strengthen your
-                    application.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5 mr-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <div>
-                  <h3 className="text-sm font-semibold text-purple-900 mb-1">
-                    Build Curated Resume
-                  </h3>
-                  <p className="text-sm text-purple-800">
-                    Paste a job description and let AI build an optimized resume from your
-                    profile. It selects the most relevant experiences, projects, and skills,
-                    then tailors the content to match the job requirements.
-                  </p>
-                </div>
-              </div>
+          <div className="flex overflow-x-auto gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex-1 min-w-max px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === tab.id
+                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                } ${
+                  tab.id !== "context" && !jobDescription.trim() ? "opacity-60" : ""
+                }`}
+              >
+                <span className="block">{tab.label}</span>
+                <span className="block text-xs font-normal opacity-70 mt-0.5 hidden sm:block">
+                  {tab.description}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Context status indicator */}
+          {jobDescription.trim() && activeTab !== "context" && (
+            <div className="mt-2 flex items-center text-xs text-green-600 dark:text-green-400">
+              <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Job context loaded — all tools will use your job description
+              <button
+                onClick={() => handleTabChange("context")}
+                className="ml-2 underline hover:no-underline"
+              >
+                Edit
+              </button>
             </div>
           )}
         </div>
 
-        {/* Mode Content */}
-        {mode === "analyze" ? <AnalyzeMode addTask={enhancedAddTask} /> : <BuildCuratedMode addTask={enhancedAddTask} />}
+        {/* Tab Content */}
+        <div>
+          {activeTab === "context" && <JobContextPanel />}
+
+          {activeTab === "resume" && (
+            <div className="space-y-6">
+              <ModeSelector mode={resumeMode} onChange={setResumeMode} />
+              {resumeMode === "analyze" ? (
+                <AnalyzeMode addTask={enhancedAddTask} />
+              ) : (
+                <BuildCuratedMode addTask={enhancedAddTask} />
+              )}
+            </div>
+          )}
+
+          {activeTab === "outreach" && <OutreachPanel />}
+
+          {activeTab === "cover-letter" && <CoverLetterPanel />}
+        </div>
       </div>
     </div>
   );

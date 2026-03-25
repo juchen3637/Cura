@@ -47,9 +47,9 @@ export default function SignupPage() {
 
     if (data.user) {
       setSuccess(true);
-      // Redirect to dashboard after brief success message
+      // Redirect to getting started page after brief success message
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push("/getting-started");
         router.refresh();
       }, 2000);
     }
@@ -79,7 +79,7 @@ export default function SignupPage() {
               Account created!
             </h2>
             <p className="text-gray-600">
-              Redirecting to your dashboard...
+              Redirecting to get you started...
             </p>
           </div>
         </div>
